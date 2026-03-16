@@ -1,0 +1,32 @@
+{
+  "name": "@hookflo/tern-dev",
+  "version": "0.1.0",
+  "description": "Local webhook tunnel and inspector. Zero storage.",
+  "license": "MIT",
+  "author": "Hookflo <hello@hookflo.com>",
+  "homepage": "https://tern.hookflo.com",
+  "repository": { "type": "git", "url": "https://github.com/hookflo/tern-dev" },
+  "engines": { "node": ">=18.0.0" },
+  "bin": { "tern-dev": "./dist/cli.js" },
+  "main": "./dist/cli.js",
+  "files": ["dist", "README.md", "LICENSE"],
+  "scripts": {
+    "build": "npm run bundle-ui && tsc",
+    "bundle-ui": "node scripts/bundle-ui.js",
+    "dev": "tsx src/cli.ts --port 3000",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "ws": "^8.18.0",
+    "minimist": "^1.2.8"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.5.13",
+    "@types/minimist": "^1.2.5",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.0",
+    "tsx": "^4.0.0"
+  },
+  "keywords": ["webhook", "tunnel", "devtools", "hookflo", "tern", "local"]
+}

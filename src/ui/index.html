@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tern • local dashboard</title>
+    <style>
+__INLINE_STYLES__
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header class="header">
+        <div class="brand">tern</div>
+        <button id="copy-url" class="tunnel-url" title="Copy tunnel URL">__TERN_TUNNEL_URL__</button>
+        <div class="status"><span id="status-dot" class="dot connecting"></span><span id="status-label">Connecting</span></div>
+      </header>
+
+      <main class="layout">
+        <section class="left-panel">
+          <div class="filters">
+            <button class="filter active" data-filter="all">All</button>
+            <button class="filter" data-filter="failed">Failed</button>
+          </div>
+          <div id="event-list" class="event-list"></div>
+        </section>
+
+        <section class="right-panel">
+          <div class="tabs">
+            <button class="tab active" data-tab="payload">Payload</button>
+            <button class="tab" data-tab="headers">Headers</button>
+            <button class="tab" data-tab="response">Response</button>
+            <button class="tab" data-tab="verify">Verify</button>
+          </div>
+          <div id="detail" class="detail empty">Waiting for webhooks… paste your tunnel URL in provider settings.</div>
+          <div class="action-bar">
+            <button id="replay-btn">Replay</button>
+            <button id="copy-curl">curl ⎘</button>
+            <button id="copy-fetch">fetch ⎘</button>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+__INLINE_SCRIPT__
+    </script>
+  </body>
+</html>

@@ -1,0 +1,5 @@
+src/
+scripts/
+.github/
+tsconfig.json
+CHANGELOG.md
