@@ -1,5 +1,7 @@
 import { RelayMessage, TernEvent } from "./types";
 
+const STRIP_HEADERS = new Set(["content-length", "transfer-encoding", "host", "connection"]);
+
 function detectPlatform(headers: Record<string, string>, body: string): string | null {
   const keys = Object.keys(headers).map((key) => key.toLowerCase());
   if (keys.some((key) => key.includes("stripe"))) return "stripe";
@@ -10,10 +12,6 @@ function detectPlatform(headers: Record<string, string>, body: string): string |
   return null;
 }
 
-function normalizeHeaders(headers: Record<string, string>): Record<string, string> {
-  return Object.fromEntries(Object.entries(headers).map(([k, v]) => [k.toLowerCase(), String(v)]));
-}
-
 function safeJsonParse(value: string): unknown | null {
   try {
     return JSON.parse(value);
@@ -22,9 +20,19 @@ function safeJsonParse(value: string): unknown | null {
   }
 }
 
+function buildForwardHeaders(incomingHeaders: Record<string, string>): Headers {
+  const headers = new Headers();
+  for (const [key, value] of Object.entries(incomingHeaders)) {
+    if (!STRIP_HEADERS.has(key.toLowerCase())) {
+      headers.set(key, String(value));
+    }
+  }
+  return headers;
+}
+
 export async function forward(request: RelayMessage, localPort: number): Promise<TernEvent> {
   const start = Date.now();
-  const headers = normalizeHeaders(request.headers);
+  const headers = buildForwardHeaders(request.headers);
   const targetUrl = `http://127.0.0.1:${localPort}${request.path}`;
 
   const event: TernEvent = {
@@ -32,39 +40,45 @@ export async function forward(request: RelayMessage, localPort: number): Promise
     receivedAt: request.receivedAt,
     method: request.method,
     path: request.path,
-    headers,
+    headers: request.headers,
     body: request.body,
     bodyParsed: safeJsonParse(request.body),
     status: null,
     latency: null,
     failed: false,
     error: null,
-    platform: detectPlatform(headers, request.body),
+    platform: detectPlatform(request.headers, request.body),
     replay: false,
     replayOf: null
   };
 
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30_000);
+
   try {
+    const hasBody = !["GET", "HEAD"].includes(request.method.toUpperCase());
+
     const response = await fetch(targetUrl, {
       method: request.method,
       headers,
-      body: request.body
+      body: hasBody ? request.body : undefined,
+      signal: controller.signal
     });
 
-    const body = await response.text();
     event.status = response.status;
     event.failed = response.status >= 400;
     event.latency = Date.now() - start;
-    event.error = null;
-    event.bodyParsed = event.bodyParsed;
-    if (body && event.bodyParsed === null) {
-      // keep raw body only
-    }
-  } catch (err) {
+  } catch (err: unknown) {
     event.status = null;
     event.latency = Date.now() - start;
     event.failed = true;
-    event.error = err instanceof Error ? err.message : "Forwarding failed";
+    if (err instanceof Error && err.name === "AbortError") {
+      event.error = `Forward timed out after 30s — is localhost:${localPort} running?`;
+    } else {
+      event.error = err instanceof Error ? err.message : "Forward failed";
+    }
+  } finally {
+    clearTimeout(timeout);
   }
 
   return event;

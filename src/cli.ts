@@ -2,11 +2,15 @@
 import minimist from "minimist";
 import { EventStore } from "./event-store";
 import { forward } from "./forwarder";
-import { error, info, printBanner, success, warn } from "./logger";
+import { error, info, printBanner, warn } from "./logger";
 import { RelayClient } from "./relay-client";
-import { Config, RelayConnectedMessage, RelayMessage } from "./types";
+import { Config, RelayConnectedMessage, RelayMessage, StatusPayload } from "./types";
 import { UiServer } from "./ui-server";
 import { WsServer } from "./ws-server";
+
+interface PackageMeta {
+  version?: string;
+}
 
 function parseConfig(): Config {
   const args = minimist(process.argv.slice(2), {
@@ -41,69 +45,91 @@ function parseConfig(): Config {
 
 function loadUiBundle(): string {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    return require("./ui-bundle").UI_BUNDLE_HTML as string;
+    const uiBundle = require("./ui-bundle") as { UI_HTML: string };
+    return uiBundle.UI_HTML;
   } catch {
     return "<html><body><h1>Build missing</h1><p>Run npm run bundle-ui.</p></body></html>";
   }
 }
 
+function loadVersion(): string {
+  try {
+    const pkg = require("../package.json") as PackageMeta;
+    return pkg.version ?? "0.0.0";
+  } catch {
+    return "0.0.0";
+  }
+}
+
 async function main(): Promise<void> {
   const config = parseConfig();
+  const version = loadVersion();
   const eventStore = new EventStore(config.maxEvents);
   const relayClient = new RelayClient();
   const wsServer = new WsServer();
 
-  let tunnelUrl = "https://connecting.relay.tern.dev";
-  let reconnectAttempts = 0;
+  let status: StatusPayload = {
+    connected: false,
+    state: "connecting",
+    tunnelUrl: "https://connecting.relay.tern.dev",
+    sessionId: ""
+  };
 
-  const connectRelay = () => {
-    relayClient.connect(config.relayUrl);
+  const setStatus = (next: Partial<StatusPayload>) => {
+    status = { ...status, ...next };
+    wsServer.setStatus(status);
   };
 
   relayClient.on("connected", (payload: RelayConnectedMessage) => {
-    reconnectAttempts = 0;
-    tunnelUrl = payload.url;
-    wsServer.setStatus(true);
-    success(`Connected to relay session ${payload.sessionId}`);
+    const tunnelChanged = Boolean(status.tunnelUrl) && status.tunnelUrl !== payload.url;
+    setStatus({
+      connected: true,
+      state: "live",
+      tunnelUrl: payload.url,
+      sessionId: payload.sessionId
+    });
+
+    if (tunnelChanged) {
+      warn("Tunnel URL changed after reconnect — update your webhook endpoint.");
+    }
     printBanner(payload.url, config.port, config.uiPort, config.noUi);
+  });
+
+  relayClient.on("reconnecting", ({ attempt, delayMs }) => {
+    setStatus({ connected: false, state: "reconnecting" });
+    warn(`Relay disconnected. Reconnecting in ${delayMs}ms (attempt ${attempt}).`);
+  });
+
+  relayClient.on("disconnect", () => {
+    if (status.state !== "reconnecting") {
+      setStatus({ connected: false, state: "reconnecting" });
+    }
   });
 
   relayClient.on("request", async (request: RelayMessage) => {
     const event = await forward(request, config.port);
     eventStore.add(event);
     wsServer.broadcast({ type: "event", event });
-    wsServer.broadcast({ type: "update", event });
     const statusLabel = event.status ? `${event.status}` : "ERR";
     info(`${event.method} ${event.path} → ${statusLabel} ${event.latency ?? 0}ms`);
   });
 
-  relayClient.on("disconnect", () => {
-    wsServer.setStatus(false);
-    if (reconnectAttempts >= 3) {
-      warn("Relay disconnected. Max reconnect attempts reached.");
-      return;
-    }
-
-    reconnectAttempts += 1;
-    const backoff = reconnectAttempts * 1000;
-    warn(`Relay disconnected. Reconnecting in ${backoff}ms (attempt ${reconnectAttempts}/3).`);
-    setTimeout(connectRelay, backoff);
-  });
-
   let uiServer: UiServer | null = null;
   if (!config.noUi) {
-    uiServer = new UiServer(
+    uiServer = new UiServer({
       eventStore,
-      config.port,
-      loadUiBundle(),
-      (event) => wsServer.broadcast({ type: "event", event }),
-      () => wsServer.broadcast({ type: "clear" }),
-      () => tunnelUrl
-    );
+      localPort: config.port,
+      uiHtml: loadUiBundle(),
+      onReplay: (event) => wsServer.broadcast({ type: "event", event }),
+      onClear: () => wsServer.broadcast({ type: "clear" }),
+      getStatus: () => status,
+      version,
+      wsPort: config.wsPort
+    });
 
     uiServer.start(config.uiPort);
     wsServer.start(config.wsPort);
+    wsServer.setStatus(status);
     info(`Dashboard listening on http://localhost:${config.uiPort}`);
   }
 
@@ -117,10 +143,10 @@ async function main(): Promise<void> {
   process.on("SIGINT", shutdown);
   process.on("SIGTERM", shutdown);
 
-  connectRelay();
+  relayClient.connect(config.relayUrl);
 }
 
-main().catch((err) => {
+main().catch((err: unknown) => {
   error(err instanceof Error ? err.message : "Unknown startup error");
   process.exit(1);
 });
