@@ -1276,33 +1276,290 @@ kbd {
 </div>
 
 <script>
-const copyBtn = document.getElementById('copy-url');
-const tunnelInput = document.getElementById('tunnel-url');
-const toast = document.getElementById('toast');
+const state = {
+  events: [],
+  selectedId: null,
+  filter: 'all',
+  tab: 'payload',
+  status: { connected: false, state: 'connecting', tunnelUrl: '' },
+  ws: null
+};
+
+const refs = {
+  copyBtn: document.getElementById('copy-url'),
+  tunnelInput: document.getElementById('tunnel-url'),
+  toast: document.getElementById('toast'),
+  eventList: document.getElementById('event-list'),
+  eventCount: document.getElementById('event-count'),
+  sdot: document.getElementById('sdot'),
+  slabel: document.getElementById('slabel'),
+  detailHeader: document.getElementById('det-header'),
+  detailBody: document.getElementById('det-body'),
+  detailId: document.getElementById('det-id'),
+  detailPlatform: document.getElementById('det-plat'),
+  detailReplay: document.getElementById('det-replay'),
+  detailTime: document.getElementById('det-time'),
+  replayBtn: document.getElementById('replay-btn'),
+  copyCurl: document.getElementById('copy-curl'),
+  copyFetch: document.getElementById('copy-fetch'),
+  actionMeta: document.getElementById('ameta'),
+  clearBtn: document.getElementById('clr-btn'),
+  failedBadge: document.getElementById('fbadge'),
+  dlqBanner: document.getElementById('dlq-banner'),
+  dlqText: document.getElementById('dlq-txt'),
+  dlqReplayAll: document.getElementById('dlq-ra')
+};
+
+const wsPort = Number('__TERN_WS_PORT__') || (location.port ? Number(location.port) + 1 : 2020);
 
 function showToast(message) {
-  toast.textContent = message;
-  toast.classList.add('show');
-  setTimeout(() => toast.classList.remove('show'), 2000);
+  refs.toast.textContent = message;
+  refs.toast.classList.add('show');
+  setTimeout(() => refs.toast.classList.remove('show'), 2000);
 }
 
-copyBtn.addEventListener('click', async () => {
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
+}
+
+function relativeTime(iso) {
+  const sec = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
+  if (sec < 60) return `${sec}s ago`;
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hrs = Math.floor(min / 60);
+  return `${hrs}h ago`;
+}
+
+function selectedEvent() {
+  return state.events.find((event) => event.id === state.selectedId) || null;
+}
+
+function filteredEvents() {
+  if (state.filter === 'failed') return state.events.filter((event) => event.failed);
+  if (state.filter === 'replayed') return state.events.filter((event) => event.replayedFrom);
+  return state.events;
+}
+
+function statusLabel(event) {
+  if (event.status) return String(event.status);
+  return event.failed ? 'ERR' : 'PENDING';
+}
+
+function setStatus(status) {
+  state.status = { ...state.status, ...status };
+  refs.sdot.className = `sdot ${state.status.state === 'live' ? 'live' : state.status.state === 'reconnecting' ? 'disconnected' : 'connecting'}`;
+  refs.slabel.textContent = state.status.state;
+  if (state.status.tunnelUrl) refs.tunnelInput.value = state.status.tunnelUrl;
+}
+
+function renderList() {
+  const events = filteredEvents();
+  refs.eventCount.textContent = `${state.events.length} event${state.events.length === 1 ? '' : 's'}`;
+
+  const failedCount = state.events.filter((event) => event.failed).length;
+  refs.failedBadge.textContent = failedCount;
+  refs.failedBadge.classList.toggle('show', failedCount > 0);
+  refs.dlqBanner.classList.toggle('show', failedCount > 0);
+  refs.dlqText.textContent = `${failedCount} event${failedCount === 1 ? '' : 's'} failed`;
+
+  if (!events.length) {
+    refs.eventList.innerHTML = `<div class="empty-list"><div class="empty-list-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="16" height="16" stroke="#6b6963" stroke-width="1"/><line x1="5" y1="7" x2="15" y2="7" stroke="#6b6963" stroke-width="1"/><line x1="5" y1="11" x2="15" y2="11" stroke="#6b6963" stroke-width="1"/><line x1="5" y1="15" x2="10" y2="15" stroke="#6b6963" stroke-width="1"/></svg></div><strong>No events</strong><span>Waiting for webhook traffic for this filter</span></div>`;
+    return;
+  }
+
+  refs.eventList.innerHTML = events.map((event) => `
+    <button class="event-row ${event.id === state.selectedId ? 'selected' : ''} ${event.failed ? 'failed' : ''}" data-id="${event.id}">
+      <div class="row-top">
+        <div class="row-left">
+          <span class="meth">${escapeHtml(event.method)}</span>
+          <span class="row-plat">${escapeHtml(event.platform || 'webhook')}</span>
+          ${event.replayedFrom ? '<span class="rtag">replayed</span>' : ''}
+        </div>
+        <span class="sbadge ${event.failed ? 'fail' : event.status ? 'ok' : 'pend'}">${statusLabel(event)}</span>
+      </div>
+      <div class="row-meta">
+        <span class="row-path">${escapeHtml(event.path || '/')}</span>
+        <span>${relativeTime(event.receivedAt)}</span>
+        <span class="row-lat">${event.latency || 0}ms</span>
+      </div>
+    </button>
+  `).join('');
+
+  refs.eventList.querySelectorAll('.event-row').forEach((row) => {
+    row.addEventListener('click', () => {
+      state.selectedId = row.getAttribute('data-id');
+      renderDetail();
+      renderList();
+    });
+  });
+}
+
+function renderDetail() {
+  const event = selectedEvent();
+  const has = Boolean(event);
+  refs.detailHeader.style.display = has ? 'block' : 'none';
+  refs.replayBtn.disabled = !has;
+  refs.copyCurl.disabled = !has;
+  refs.copyFetch.disabled = !has;
+
+  if (!event) {
+    refs.detailBody.innerHTML = `<div class="empty-det"><div class="empty-det-icon"><svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="6" stroke="#10b981" stroke-width="1.2" fill="none"/><circle cx="16" cy="16" r="11" stroke="#10b981" stroke-width="0.6" fill="none" opacity="0.4"/></svg></div><strong>Awaiting Signal</strong><span>Select an event from the list or wait for webhooks to arrive through the tunnel</span></div>`;
+    refs.actionMeta.textContent = '';
+    return;
+  }
+
+  refs.detailId.textContent = event.id;
+  refs.detailTime.textContent = new Date(event.receivedAt).toLocaleString();
+  refs.detailPlatform.style.display = event.platform ? 'inline-block' : 'none';
+  refs.detailPlatform.textContent = event.platform || '';
+  refs.detailReplay.style.display = event.replayedFrom ? 'inline-block' : 'none';
+  refs.actionMeta.textContent = `${event.method} ${event.path}`;
+
+  if (state.tab === 'payload') {
+    const payload = event.bodyParsed ? JSON.stringify(event.bodyParsed, null, 2) : (event.body || '');
+    refs.detailBody.innerHTML = `<div class="codeblock"><div class="codeblock-head"><span class="code-lbl">payload</span></div><pre>${escapeHtml(payload)}</pre></div>`;
+  } else if (state.tab === 'headers') {
+    const rows = Object.entries(event.headers || {}).map(([k, v]) => {
+      const sig = /signature|hmac|digest/i.test(k);
+      return `<tr class="${sig ? 'is-sig' : ''}"><td>${escapeHtml(k)}${sig ? '<span class="sig-tag">sig</span>' : ''}</td><td>${escapeHtml(v)}</td></tr>`;
+    }).join('');
+    refs.detailBody.innerHTML = `<table class="htable">${rows || '<tr><td>none</td><td>-</td></tr>'}</table>`;
+  } else if (state.tab === 'response') {
+    refs.detailBody.innerHTML = `<div class="stat-row"><div class="stat-box"><div class="stat-lbl">status</div><div class="stat-val ${event.failed ? 'fail' : 'ok'}">${statusLabel(event)}</div></div><div class="stat-box"><div class="stat-lbl">latency</div><div class="stat-val">${event.latency || 0}ms</div></div><div class="stat-box"><div class="stat-lbl">size</div><div class="stat-val">${(event.body || '').length}</div></div></div><div class="codeblock"><div class="codeblock-head"><span class="code-lbl">error</span></div><pre>${escapeHtml(event.error || 'none')}</pre></div>`;
+  } else {
+    refs.detailBody.innerHTML = `<div class="verify-box"><div class="verify-title">Signature Verification</div><div class="verify-body">Use provider SDK with raw body and headers. Keep your route on <code>express.raw({ type: '*/*' })</code> and verify against this exact payload.</div></div>`;
+  }
+}
+
+function render() {
+  renderList();
+  renderDetail();
+}
+
+function upsertEvent(event) {
+  const idx = state.events.findIndex((item) => item.id === event.id);
+  if (idx === -1) {
+    state.events.unshift(event);
+    if (!state.selectedId) state.selectedId = event.id;
+  } else {
+    state.events[idx] = event;
+  }
+}
+
+function connectWs() {
+  const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
+  state.ws = new WebSocket(`${protocol}://${location.hostname}:${wsPort}`);
+
+  state.ws.addEventListener('open', () => setStatus({ state: 'live', connected: true }));
+
+  state.ws.addEventListener('message', (message) => {
+    const data = JSON.parse(message.data);
+    if (data.type === 'event' || data.type === 'update') {
+      upsertEvent(data.event);
+      render();
+    } else if (data.type === 'clear') {
+      state.events = [];
+      state.selectedId = null;
+      render();
+    } else if (data.type === 'status') {
+      setStatus(data);
+    }
+  });
+
+  state.ws.addEventListener('close', () => {
+    setStatus({ connected: false, state: 'reconnecting' });
+    setTimeout(connectWs, 1500);
+  });
+}
+
+async function loadInitial() {
+  const [eventsRes, statusRes] = await Promise.all([fetch('/api/events'), fetch('/api/status')]);
+  const eventsData = await eventsRes.json();
+  const statusData = await statusRes.json();
+  state.events = eventsData.events || [];
+  state.selectedId = state.events[0]?.id || null;
+  setStatus(statusData);
+  render();
+}
+
+refs.copyBtn.addEventListener('click', async () => {
   try {
-    await navigator.clipboard.writeText(tunnelInput.value);
-    copyBtn.classList.add('copied');
+    await navigator.clipboard.writeText(refs.tunnelInput.value);
+    refs.copyBtn.classList.add('copied');
     showToast('URL copied to clipboard');
-    setTimeout(() => copyBtn.classList.remove('copied'), 2000);
-  } catch (err) {
+    setTimeout(() => refs.copyBtn.classList.remove('copied'), 2000);
+  } catch {
     showToast('Failed to copy');
   }
 });
 
-// Keyboard shortcuts
-document.addEventListener('keydown', (e) => {
-  if (e.key === 'c' && !e.ctrlKey && !e.metaKey) {
-    copyBtn.click();
-  }
+refs.clearBtn.addEventListener('click', async () => {
+  await fetch('/api/clear', { method: 'POST' });
+  state.events = [];
+  state.selectedId = null;
+  render();
 });
+
+refs.replayBtn.addEventListener('click', async () => {
+  const event = selectedEvent();
+  if (!event) return;
+  await fetch('/api/replay', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: event.id }) });
+  showToast('Event replayed');
+});
+
+refs.dlqReplayAll.addEventListener('click', async () => {
+  const failed = state.events.filter((event) => event.failed);
+  for (const event of failed) {
+    await fetch('/api/replay', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: event.id }) });
+  }
+  showToast(`Replayed ${failed.length} failed events`);
+});
+
+refs.copyCurl.addEventListener('click', async () => {
+  const event = selectedEvent();
+  if (!event) return;
+  const headers = Object.entries(event.headers || {}).map(([k, v]) => `-H '${k}: ${String(v).replaceAll("'", "'\''")}'`).join(' ');
+  const body = (event.body || '').replaceAll("'", "'\''");
+  const cmd = `curl -X ${event.method} ${headers} --data-raw '${body}' '${refs.tunnelInput.value}${event.path}'`;
+  await navigator.clipboard.writeText(cmd);
+  showToast('curl command copied');
+});
+
+refs.copyFetch.addEventListener('click', async () => {
+  const event = selectedEvent();
+  if (!event) return;
+  const snippet = `await fetch('${refs.tunnelInput.value}${event.path}', {\n  method: '${event.method}',\n  headers: ${JSON.stringify(event.headers || {}, null, 2)},\n  body: ${JSON.stringify(event.body || '')}\n});`;
+  await navigator.clipboard.writeText(snippet);
+  showToast('fetch snippet copied');
+});
+
+document.querySelectorAll('.filter').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter').forEach((item) => item.classList.remove('active'));
+    btn.classList.add('active');
+    state.filter = btn.dataset.filter;
+    renderList();
+  });
+});
+
+document.querySelectorAll('.tab').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach((item) => item.classList.remove('active'));
+    btn.classList.add('active');
+    state.tab = btn.dataset.tab;
+    renderDetail();
+  });
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key.toLowerCase() === 'c' && !e.ctrlKey && !e.metaKey) refs.copyBtn.click();
+});
+
+loadInitial().then(connectWs).catch(() => showToast('Failed to load dashboard data'));
 </script>
 </body>
 </html>
