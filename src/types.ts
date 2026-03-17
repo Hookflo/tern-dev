@@ -1,3 +1,5 @@
+export type RelayConnectionState = "connecting" | "live" | "reconnecting" | "disconnected";
+
 export interface TernEvent {
   id: string;
   receivedAt: string;
@@ -38,5 +40,12 @@ export interface Config {
 export interface RelayConnectedMessage {
   type: "connected";
   url: string;
+  sessionId: string;
+}
+
+export interface StatusPayload {
+  connected: boolean;
+  state: RelayConnectionState;
+  tunnelUrl: string;
   sessionId: string;
 }

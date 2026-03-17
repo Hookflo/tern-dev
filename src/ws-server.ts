@@ -1,26 +1,30 @@
 import WebSocket, { WebSocketServer } from "ws";
+import { StatusPayload, TernEvent } from "./types";
 
 export type BrowserMessage =
-  | { type: "event"; event: unknown }
-  | { type: "update"; event: unknown }
+  | { type: "event"; event: TernEvent }
   | { type: "clear" }
-  | { type: "status"; connected: boolean };
+  | ({ type: "status" } & StatusPayload);
 
 export class WsServer {
   private wss: WebSocketServer | null = null;
-  private connected = false;
+  private status: StatusPayload = {
+    connected: false,
+    state: "connecting",
+    tunnelUrl: "",
+    sessionId: ""
+  };
 
   start(port: number): void {
     this.wss = new WebSocketServer({ port });
-
     this.wss.on("connection", (socket) => {
-      socket.send(JSON.stringify({ type: "status", connected: this.connected }));
+      socket.send(JSON.stringify({ type: "status", ...this.status }));
     });
   }
 
-  setStatus(connected: boolean): void {
-    this.connected = connected;
-    this.broadcast({ type: "status", connected });
+  setStatus(status: StatusPayload): void {
+    this.status = status;
+    this.broadcast({ type: "status", ...status });
   }
 
   broadcast(payload: BrowserMessage): void {
