@@ -1,6 +1,7 @@
 import http from "http";
 import { EventStore } from "./event-store";
 import { replay as replayEvent } from "./forwarder";
+import { error } from "./logger";
 import { StatusPayload, TernEvent } from "./types";
 
 interface UiServerOptions {
@@ -62,7 +63,17 @@ export class UiServer {
       }
 
       if (req.method === "POST" && req.url === "/api/replay") {
-        const body = await this.readBody(req);
+        const contentLength = Number(req.headers["content-length"] ?? 0);
+        if (Number.isFinite(contentLength) && contentLength > 16_384) {
+          this.sendJson(res, 413, { error: "Request body too large" });
+          return;
+        }
+
+        const body = await this.readBody(req).catch(() => null);
+        if (body === null) {
+          this.sendJson(res, 413, { error: "Request body too large" });
+          return;
+        }
         let eventId = "";
         try {
           const parsed = JSON.parse(body) as { id?: string };
@@ -88,6 +99,17 @@ export class UiServer {
       this.sendJson(res, 404, { error: "Not found" });
     });
 
+    this.server.on("error", (err: NodeJS.ErrnoException) => {
+      if (err.code === "EADDRINUSE") {
+        error(
+          `Dashboard port ${port} is already in use. ` +
+            `Use --ui-port to choose a different port.`
+        );
+      } else {
+        error(`Dashboard server error: ${err.message}`);
+      }
+      process.exit(1);
+    });
     this.server.listen(port);
   }
 
@@ -102,11 +124,18 @@ export class UiServer {
     res.end(JSON.stringify(payload));
   }
 
-  private readBody(req: http.IncomingMessage): Promise<string> {
+  private readBody(req: http.IncomingMessage, maxBytes = 16_384): Promise<string> {
     return new Promise((resolve, reject) => {
       let body = "";
+      let size = 0;
       req.setEncoding("utf8");
       req.on("data", (chunk: string) => {
+        size += Buffer.byteLength(chunk);
+        if (size > maxBytes) {
+          req.destroy();
+          reject(new Error("Request body too large"));
+          return;
+        }
         body += chunk;
       });
       req.on("end", () => resolve(body));

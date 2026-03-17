@@ -56,10 +56,12 @@ export async function forward(request: RelayMessage, localPort: number): Promise
   const timeout = setTimeout(() => controller.abort(), 30_000);
 
   try {
+    const hasBody = !["GET", "HEAD"].includes(request.method.toUpperCase());
+
     const response = await fetch(targetUrl, {
       method: request.method,
       headers,
-      body: request.body,
+      body: hasBody ? request.body : undefined,
       signal: controller.signal
     });
 
