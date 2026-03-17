@@ -12,7 +12,9 @@ export class RelayClient extends EventEmitter {
   private socket: WebSocket | null = null;
 
   connect(url: string): void {
-    this.socket = new WebSocket(url);
+    // Ensure /connect path is always appended
+    const wsUrl = url.endsWith("/connect") ? url : `${url}/connect`;
+    this.socket = new WebSocket(wsUrl);
 
     this.socket.on("open", () => {
       this.socket?.send(JSON.stringify({ type: "register" }));
@@ -20,7 +22,9 @@ export class RelayClient extends EventEmitter {
 
     this.socket.on("message", (data) => {
       try {
-        const parsed = JSON.parse(data.toString()) as RelayConnectedMessage | RelayMessage;
+        const parsed = JSON.parse(data.toString()) as
+          | RelayConnectedMessage
+          | RelayMessage;
         if (parsed.type === "connected") {
           this.emit("connected", parsed);
         } else if (parsed.type === "request") {
@@ -45,7 +49,10 @@ export class RelayClient extends EventEmitter {
     this.socket = null;
   }
 
-  override on<K extends keyof RelayClientEvents>(event: K, listener: RelayClientEvents[K]): this {
+  override on<K extends keyof RelayClientEvents>(
+    event: K,
+    listener: RelayClientEvents[K],
+  ): this {
     return super.on(event, listener);
   }
 }
