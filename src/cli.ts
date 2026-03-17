@@ -4,7 +4,12 @@ import { EventStore } from "./event-store";
 import { forward } from "./forwarder";
 import { error, info, printBanner, warn } from "./logger";
 import { RelayClient } from "./relay-client";
-import { Config, RelayConnectedMessage, RelayMessage, StatusPayload } from "./types";
+import {
+  Config,
+  RelayConnectedMessage,
+  RelayMessage,
+  StatusPayload,
+} from "./types";
 import { UiServer } from "./ui-server";
 import { WsServer } from "./ws-server";
 
@@ -20,8 +25,9 @@ function parseConfig(): Config {
       path: "/",
       "ui-port": 2019,
       "max-events": 500,
-      relay: process.env.RELAY_URL ?? "wss://relay.tern.hookflo.com"
-    }
+      relay:
+        process.env.RELAY_URL ?? "wss://tern-relay.hookflo-tern.workers.dev",
+    },
   });
 
   const port = Number(args.port);
@@ -39,7 +45,7 @@ function parseConfig(): Config {
     wsPort: uiPort + 1,
     noUi: Boolean(args["no-ui"]),
     relayUrl: String(args.relay),
-    maxEvents: Number.isFinite(maxEvents) ? maxEvents : 500
+    maxEvents: Number.isFinite(maxEvents) ? maxEvents : 500,
   };
 }
 
@@ -71,8 +77,8 @@ async function main(): Promise<void> {
   let status: StatusPayload = {
     connected: false,
     state: "connecting",
-    tunnelUrl: "https://connecting.relay.tern.dev",
-    sessionId: ""
+    tunnelUrl: "",
+    sessionId: "",
   };
 
   const setStatus = (next: Partial<StatusPayload>) => {
@@ -81,23 +87,28 @@ async function main(): Promise<void> {
   };
 
   relayClient.on("connected", (payload: RelayConnectedMessage) => {
-    const tunnelChanged = Boolean(status.tunnelUrl) && status.tunnelUrl !== payload.url;
+    const tunnelChanged =
+      Boolean(status.tunnelUrl) && status.tunnelUrl !== payload.url;
     setStatus({
       connected: true,
       state: "live",
       tunnelUrl: payload.url,
-      sessionId: payload.sessionId
+      sessionId: payload.sessionId,
     });
 
     if (tunnelChanged) {
-      warn("Tunnel URL changed after reconnect — update your webhook endpoint.");
+      warn(
+        "Tunnel URL changed after reconnect — update your webhook endpoint.",
+      );
     }
     printBanner(payload.url, config.port, config.uiPort, config.noUi);
   });
 
   relayClient.on("reconnecting", ({ attempt, delayMs }) => {
     setStatus({ connected: false, state: "reconnecting" });
-    warn(`Relay disconnected. Reconnecting in ${delayMs}ms (attempt ${attempt}).`);
+    warn(
+      `Relay disconnected. Reconnecting in ${delayMs}ms (attempt ${attempt}).`,
+    );
   });
 
   relayClient.on("disconnect", () => {
@@ -111,7 +122,9 @@ async function main(): Promise<void> {
     eventStore.add(event);
     wsServer.broadcast({ type: "event", event });
     const statusLabel = event.status ? `${event.status}` : "ERR";
-    info(`${event.method} ${event.path} → ${statusLabel} ${event.latency ?? 0}ms`);
+    info(
+      `${event.method} ${event.path} → ${statusLabel} ${event.latency ?? 0}ms`,
+    );
   });
 
   let uiServer: UiServer | null = null;
@@ -124,7 +137,7 @@ async function main(): Promise<void> {
       onClear: () => wsServer.broadcast({ type: "clear" }),
       getStatus: () => status,
       version,
-      wsPort: config.wsPort
+      wsPort: config.wsPort,
     });
 
     uiServer.start(config.uiPort);
