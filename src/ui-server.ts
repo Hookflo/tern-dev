@@ -14,7 +14,6 @@ interface UiServerOptions {
   onClear: () => void;
   getStatus: () => StatusPayload;
   version: string;
-  wsPort: number;
 }
 
 export class UiServer {
@@ -22,7 +21,7 @@ export class UiServer {
 
   constructor(private readonly options: UiServerOptions) {}
 
-  start(port: number): void {
+  start(port: number): http.Server {
     this.server = http.createServer(async (req, res) => {
       if (!req.url || !req.method) {
         this.sendJson(res, 400, { error: "Bad request" });
@@ -31,8 +30,7 @@ export class UiServer {
 
       if (req.method === "GET" && req.url === "/") {
         const html = this.options.uiHtml
-          .replace("__TERN_TUNNEL_URL__", this.options.getStatus().tunnelUrl)
-          .replace("__TERN_WS_PORT__", String(this.options.wsPort));
+          .replace("__TERN_TUNNEL_URL__", this.options.getStatus().tunnelUrl);
         res.statusCode = 200;
         res.setHeader("content-type", "text/html; charset=utf-8");
         res.end(html);
@@ -112,7 +110,9 @@ export class UiServer {
       }
       process.exit(1);
     });
+
     this.server.listen(port);
+    return this.server;
   }
 
   close(): void {
@@ -142,6 +142,7 @@ export class UiServer {
       });
       req.on("end", () => resolve(body));
       req.on("error", reject);
+      
     });
   }
 }

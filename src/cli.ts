@@ -267,11 +267,10 @@ async function main(): Promise<void> {
       onClear: () => wsServer.broadcast({ type: "clear" }),
       getStatus: () => status,
       version,
-      wsPort: (config.uiPort ?? 2019) + 1,
     });
 
-    uiServer.start(config.uiPort ?? 2019);
-    wsServer.start((config.uiPort ?? 2019) + 1);
+    const httpServer = uiServer.start(config.uiPort ?? 2019);
+    wsServer.attach(httpServer, "/ws");
     wsServer.setStatus(status);
     info(`Dashboard listening on http://localhost:${config.uiPort ?? 2019}`);
   }
@@ -282,7 +281,7 @@ async function main(): Promise<void> {
 
   process.on("SIGTERM", () => shutdown());
 
-  relayClient.connect(config.relay ?? "wss://relay.tern.hookflo.com");
+  relayClient.connect(config.relay ?? "wss://tern-relay.hookflo-tern.workers.dev");
 
 }
 

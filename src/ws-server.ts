@@ -1,3 +1,4 @@
+import http from "http";
 import WebSocket, { WebSocketServer } from "ws";
 import { StatusPayload, TernEvent } from "./types";
 
@@ -36,6 +37,13 @@ export class WsServer {
         client.send(message);
       }
     }
+  }
+
+  attach(server: http.Server, path: string): void {
+    this.wss = new WebSocketServer({ server, path });
+    this.wss.on("connection", (socket) => {
+      socket.send(JSON.stringify({ type: "status", ...this.status }));
+    });
   }
 
   close(): void {
