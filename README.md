@@ -15,8 +15,7 @@ npx @hookflo/tern-dev --port 3000
 Output:
 
 ```text
-tern  ●  https://tern-relay.hookflo-tern.workers.dev/s/abc12345 → localhost:3000
-       ●  Dashboard → http://localhost:2019
+Tunnel URL: https://abc123.relay.tern.hookflo.com
 ```
 
 1. Copy the tunnel URL.
@@ -32,11 +31,68 @@ tern-dev opens a WebSocket to the relay server and receives a public tunnel URL.
 | Flag | Default | Description |
 |------|---------|-------------|
 | `--port` | required | Local port to forward to |
-| `--path` | `/` | Path on local server |
+| `--path` | `/` | Path prefix on local server |
 | `--ui-port` | `2019` | Dashboard port |
 | `--no-ui` | false | Disable dashboard |
-| `--relay` | hosted relay | Custom relay URL (for self-hosting) |
+| `--relay` | `wss://relay.tern.hookflo.com` | Custom relay URL (for self-hosting) |
 | `--max-events` | `500` | Events kept in memory |
+| `--ttl` | unset | Auto-kill session after N minutes |
+| `--rate-limit` | unset | Max incoming requests/min; excess returns 429 |
+| `--allow-ip` | unset | Comma-separated allowlist of IP/CIDR ranges |
+| `--block-paths` | unset | Comma-separated blocked path prefixes |
+| `--block-methods` | unset | Comma-separated blocked methods |
+| `--block-headers` | unset | Comma-separated `name:glob` block rules (supports `*`) |
+| `--log` | unset | Append request audit lines to a file |
+| `--local-cert` | unset | TLS certificate path for local forwarding |
+| `--local-key` | unset | TLS private key path for local forwarding |
+
+## Configuration
+
+tern-dev also supports loading config from `tern.config.json` (or `.ternrc.json`) by searching from your current directory upward.
+
+Priority order is:
+
+1. CLI flags
+2. `tern.config.json`
+3. built-in defaults
+
+Example `tern.config.json`:
+
+```json
+{
+  "$schema": "./tern-config.schema.json",
+  "port": 3000,
+  "path": "/webhooks",
+  "uiPort": 2019,
+  "noUi": false,
+  "relay": "wss://relay.tern.hookflo.com",
+  "maxEvents": 500,
+  "ttl": 60,
+  "rateLimit": 100,
+  "allowIp": ["54.187.174.169", "192.30.252.0/22"],
+  "block": {
+    "paths": ["/admin", "/debug", "/metrics"],
+    "methods": ["DELETE"],
+    "headers": {
+      "user-agent": "curl*"
+    }
+  },
+  "log": "./tern-audit.log"
+}
+```
+
+Notes:
+
+- IP allowlisting supports exact IPv4 and CIDR ranges.
+- Webhook signature verification (Stripe, GitHub, Clerk, etc.) belongs in your app handler; tern-dev intentionally does not do signature auth at the tunnel layer.
+- The local dashboard at `localhost:2019` remains open and unauthenticated by design.
+- Pressing `Ctrl+C` performs a graceful shutdown: relay WebSocket and dashboard server are closed cleanly, then tern-dev prints a final session-end confirmation.
+
+If `--log` is set, tern-dev writes one line per completed request in this format:
+
+```text
+[<ISO timestamp>] <METHOD> <path> from <source-ip> → <status-code> <status-text> <duration>ms
+```
 
 ## Dashboard features
 
@@ -83,8 +139,9 @@ RELAY_URL=wss://your-relay.your-account.workers.dev \
 
 ## Privacy
 
-- Nothing is stored to disk
-- Nothing is sent to Hookflo servers (except through the relay, which stores nothing)
+- Nothing is stored to disk unless you explicitly set `--log`
+- By default, traffic passes through a hosted relay on Cloudflare Workers, so Cloudflare can see in-transit traffic like any relay provider.
+- For stricter trust boundaries, self-host the relay and point tern-dev to it with `--relay`.
 - All event data is session-scoped in memory — cleared when you close the terminal
 - The relay source is small and fully auditable
 
