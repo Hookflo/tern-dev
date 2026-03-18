@@ -9,12 +9,14 @@ export interface TernEvent {
   body: string;
   bodyParsed: unknown | null;
   status: number | null;
+  statusText?: string | null;
   latency: number | null;
   failed: boolean;
   error: string | null;
   platform: string | null;
   replay: boolean;
   replayOf: string | null;
+  sourceIp?: string;
 }
 
 export interface RelayMessage {
@@ -25,16 +27,6 @@ export interface RelayMessage {
   headers: Record<string, string>;
   body: string;
   receivedAt: string;
-}
-
-export interface Config {
-  port: number;
-  path: string;
-  uiPort: number;
-  wsPort: number;
-  noUi: boolean;
-  relayUrl: string;
-  maxEvents: number;
 }
 
 export interface RelayConnectedMessage {

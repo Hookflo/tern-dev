@@ -2,3 +2,7 @@ dist/
 node_modules/
 src/ui-bundle.ts
 *.js.map
+tern.config.json
+tern-audit.log
+*.pem
+*.key

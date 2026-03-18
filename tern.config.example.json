@@ -1,0 +1,23 @@
+{
+  "$schema": "./tern-config.schema.json",
+  "port": 3000,
+  "path": "/webhooks",
+  "uiPort": 2019,
+  "noUi": false,
+  "relay": "wss://relay.tern.hookflo.com",
+  "maxEvents": 500,
+  "ttl": 60,
+  "rateLimit": 100,
+  "allowIp": [
+    "54.187.174.169",
+    "192.30.252.0/22"
+  ],
+  "block": {
+    "paths": ["/admin", "/debug", "/metrics"],
+    "methods": ["DELETE"],
+    "headers": {
+      "user-agent": "curl*"
+    }
+  },
+  "log": "./tern-audit.log"
+}

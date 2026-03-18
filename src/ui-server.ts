@@ -1,4 +1,5 @@
 import http from "http";
+import { TernConfig } from "./config";
 import { EventStore } from "./event-store";
 import { replay as replayEvent } from "./forwarder";
 import { error } from "./logger";
@@ -7,6 +8,7 @@ import { StatusPayload, TernEvent } from "./types";
 interface UiServerOptions {
   eventStore: EventStore;
   localPort: number;
+  forwardConfig: TernConfig;
   uiHtml: string;
   onReplay: (event: TernEvent) => void;
   onClear: () => void;
@@ -45,7 +47,7 @@ export class UiServer {
           tunnelUrl: status.tunnelUrl,
           sessionId: status.sessionId,
           port: this.options.localPort,
-          version: this.options.version
+          version: this.options.version,
         });
         return;
       }
@@ -89,7 +91,7 @@ export class UiServer {
           return;
         }
 
-        const replayed = await replayEvent(event, this.options.localPort);
+        const replayed = await replayEvent(event, this.options.forwardConfig);
         this.options.eventStore.add(replayed);
         this.options.onReplay(replayed);
         this.sendJson(res, 200, { event: replayed });
@@ -103,7 +105,7 @@ export class UiServer {
       if (err.code === "EADDRINUSE") {
         error(
           `Dashboard port ${port} is already in use. ` +
-            `Use --ui-port to choose a different port.`
+            `Use --ui-port to choose a different port.`,
         );
       } else {
         error(`Dashboard server error: ${err.message}`);

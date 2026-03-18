@@ -1,0 +1,108 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://tern.hookflo.com/tern-config.schema.json",
+  "title": "Tern Config",
+  "description": "Configuration for tern-dev local webhook tunnel.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "port": {
+      "type": "integer",
+      "description": "Local application port to forward webhook requests to.",
+      "minimum": 1,
+      "maximum": 65535
+    },
+    "path": {
+      "type": "string",
+      "description": "Base path prefix used when forwarding requests to localhost.",
+      "default": "/"
+    },
+    "uiPort": {
+      "type": "integer",
+      "description": "Port used by the local dashboard.",
+      "default": 2019,
+      "minimum": 1,
+      "maximum": 65535
+    },
+    "noUi": {
+      "type": "boolean",
+      "description": "Disable the local dashboard UI.",
+      "default": false
+    },
+    "relay": {
+      "type": "string",
+      "description": "Relay WebSocket URL used to establish the tunnel.",
+      "default": "wss://relay.tern.hookflo.com"
+    },
+    "maxEvents": {
+      "type": "integer",
+      "description": "Maximum number of events retained in memory.",
+      "default": 500,
+      "minimum": 1
+    },
+    "ttl": {
+      "type": "integer",
+      "description": "Auto-kill session after N minutes.",
+      "minimum": 1
+    },
+    "rateLimit": {
+      "type": "integer",
+      "description": "Max incoming requests per minute.",
+      "minimum": 1
+    },
+    "allowIp": {
+      "type": "array",
+      "description": "IP allowlist entries; supports exact IPv4 and CIDR ranges.",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "block": {
+      "type": "object",
+      "description": "Block rules evaluated before forwarding.",
+      "additionalProperties": false,
+      "properties": {
+        "paths": {
+          "type": "array",
+          "description": "Path prefixes to block.",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "methods": {
+          "type": "array",
+          "description": "HTTP methods to block.",
+          "items": {
+            "type": "string"
+          },
+          "default": []
+        },
+        "headers": {
+          "type": "object",
+          "description": "Header glob rules to block when matched.",
+          "default": {},
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "log": {
+      "type": "string",
+      "description": "File path for append-only audit log output.",
+      "default": ""
+    },
+    "localCert": {
+      "type": "string",
+      "description": "TLS certificate path for relay-to-localhost forwarding leg.",
+      "default": ""
+    },
+    "localKey": {
+      "type": "string",
+      "description": "TLS key path for relay-to-localhost forwarding leg.",
+      "default": ""
+    }
+  }
+}
