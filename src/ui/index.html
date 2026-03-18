@@ -32,6 +32,14 @@
   --info: #3b82f6;
   --info-bg: rgba(59, 130, 246, 0.06);
   --info-border: rgba(59, 130, 246, 0.2);
+  --accent-blue: #3b82f6;
+  --accent-blue-bg: rgba(59, 130, 246, 0.08);
+  --accent-blue-border: rgba(59, 130, 246, 0.25);
+  --accent-amber: #f59e0b;
+  --accent-amber-bg: rgba(245, 158, 11, 0.09);
+  --accent-amber-border: rgba(245, 158, 11, 0.25);
+  --diff-remove-bg: rgba(239, 68, 68, 0.14);
+  --diff-add-bg: rgba(16, 185, 129, 0.16);
   --mono: 'IBM Plex Mono', 'JetBrains Mono', monospace;
   --sans: 'IBM Plex Sans', system-ui, sans-serif;
 }
@@ -496,6 +504,18 @@ body::before {
 .event-row.selected {
   background: var(--bg-tertiary);
   border-left: 3px solid var(--accent);
+  padding-left: 11px;
+}
+
+.event-row.compare-a {
+  border-left: 3px solid var(--accent-blue);
+  background: var(--accent-blue-bg);
+  padding-left: 11px;
+}
+
+.event-row.compare-b {
+  border-left: 3px solid var(--accent-amber);
+  background: var(--accent-amber-bg);
   padding-left: 11px;
 }
 
@@ -1117,6 +1137,229 @@ kbd {
   transform: translateX(-50%) translateY(0);
 }
 
+.compare-hint {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  padding: 7px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-secondary);
+}
+
+.compare-hint.hide {
+  display: none;
+}
+
+.compare-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: min(50vw, 780px);
+  height: 100%;
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--border-secondary);
+  z-index: 20;
+  transform: translateX(100%);
+  transition: transform 200ms ease-out;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.compare-panel.open {
+  transform: translateX(0);
+}
+
+.right-panel {
+  position: relative;
+}
+
+.compare-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-secondary);
+}
+
+.compare-title {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+}
+
+.compare-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+
+.icon-btn, .small-btn {
+  border: 1px solid var(--border-secondary);
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all .15s ease;
+}
+
+.icon-btn {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.small-btn {
+  padding: 4px 8px;
+  font-family: var(--mono);
+  font-size: 9px;
+}
+
+.icon-btn:hover, .small-btn:hover {
+  border-color: var(--border-tertiary);
+  color: var(--text-primary);
+}
+
+.compare-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+}
+
+.ctab {
+  flex: 1;
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary);
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 8px 6px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+
+.ctab.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.compare-body {
+  flex: 1;
+  overflow: auto;
+  padding: 12px;
+  animation: tabFade 150ms ease;
+}
+
+@keyframes tabFade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.identical-banner {
+  background: var(--accent-bg);
+  border: 1px solid var(--accent-border);
+  color: var(--accent);
+  padding: 8px 10px;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  font-size: 10px;
+  display: none;
+  animation: identFade 150ms ease;
+}
+
+.identical-banner.show {
+  display: block;
+}
+
+@keyframes identFade {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.diff-list {
+  border: 1px solid var(--border-secondary);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.diff-line {
+  display: grid;
+  grid-template-columns: 36px 36px 20px 1fr;
+  gap: 8px;
+  padding: 2px 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  line-height: 1.55;
+  opacity: 1;
+}
+
+.diff-line.anim {
+  opacity: 0;
+  animation: lineIn 160ms ease forwards;
+}
+
+@keyframes lineIn {
+  from { opacity: 0; transform: translateY(2px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.diff-line.delete { background: var(--diff-remove-bg); }
+.diff-line.insert { background: var(--diff-add-bg); }
+.diff-line.equal { color: var(--text-tertiary); }
+
+.diff-lno { color: var(--text-quaternary); text-align: right; min-width: 3ch; }
+.diff-mark { color: var(--text-secondary); }
+.diff-line.insert .diff-mark { color: var(--accent); }
+.diff-line.delete .diff-mark { color: var(--error); }
+.diff-line.dynamic { opacity: 0.6; }
+
+.side-by-side {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.side-col {
+  border: 1px solid var(--border-secondary);
+  border-radius: 6px;
+  overflow: auto;
+  max-height: calc(100vh - 220px);
+}
+
+.meta-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--border-secondary);
+}
+.meta-table th, .meta-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  font-size: 10px;
+}
+.meta-table th {
+  color: var(--text-tertiary);
+  text-align: left;
+  background: var(--bg-tertiary);
+}
+
+.delta-warn { color: var(--warning); font-weight: 600; }
+.delta-danger { color: var(--error); font-weight: 600; }
+
+.compare-note, .compare-warning, .compare-error {
+  padding: 8px 10px;
+  border-radius: 5px;
+  font-size: 10px;
+  margin-bottom: 10px;
+}
+.compare-note { background: var(--bg-tertiary); color: var(--text-tertiary); }
+.compare-warning { background: var(--accent-amber-bg); color: var(--accent-amber); border: 1px solid var(--accent-amber-border); }
+.compare-error { background: var(--error-bg); color: var(--error); border: 1px solid var(--error-border); }
+
+.ignore-list { display: grid; gap: 7px; }
+.ignore-item { display: flex; align-items: center; gap: 8px; font-size: 10px; color: var(--text-secondary); }
+
+.dynamic-note { color: var(--text-quaternary); margin-left: 8px; font-size: 9px; }
+
 @media (max-width: 800px) {
   .layout {
     grid-template-columns: 1fr;
@@ -1133,6 +1376,20 @@ kbd {
 
   .stat-row {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .compare-panel {
+    width: 100%;
+    height: 50vh;
+    top: auto;
+    bottom: 0;
+    border-left: none;
+    border-top: 1px solid var(--border-secondary);
+    transform: translateY(100%);
+  }
+
+  .compare-panel.open {
+    transform: translateY(0);
   }
 }
 
@@ -1183,7 +1440,10 @@ kbd {
     <span class="tunnel-label">endpoint</span>
     <div class="tunnel-url-wrap">
       <input id="tunnel-url" class="tunnel-url" readonly value="__TERN_TUNNEL_URL__"/>
-      <button class="copy-btn" id="copy-url">copy ⎘</button>
+      <button class="copy-btn" id="copy-url">
+        <svg width="10" height="10" viewBox="0 0 11 11" fill="none"><rect x="1.5" y="3.5" width="6.5" height="6" stroke="currentColor" stroke-width="1"/><path d="M3.5 3.5V2.2a1.2 1.2 0 0 1 1.2-1.2h4.3a1.2 1.2 0 0 1 1.2 1.2v4.3a1.2 1.2 0 0 1-1.2 1.2H7.5" stroke="currentColor" stroke-width="1"/></svg>
+        copy
+      </button>
     </div>
   </div>
 
@@ -1206,6 +1466,7 @@ kbd {
       </div>
       <button class="clr-btn" id="clr-btn">clear</button>
     </div>
+    <div class="compare-hint" id="compare-hint">Tip: Cmd+Click (or Ctrl+Click) any two events to compare</div>
 
     <div id="dlq-banner" class="dlq-banner">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.5L12.5 12H1.5L7 1.5Z" stroke="#ef4444" stroke-width="1.2" fill="none"/><line x1="7" y1="5" x2="7" y2="8.5" stroke="#ef4444" stroke-width="1"/><circle cx="7" cy="10" r="0.7" fill="#ef4444"/></svg>
@@ -1229,7 +1490,10 @@ kbd {
       <div class="det-meta">
         <span class="det-id" id="det-id"></span>
         <span class="det-plat" id="det-plat"></span>
-        <span class="det-replay" id="det-replay">↻ replay</span>
+        <span class="det-replay" id="det-replay">
+          <svg width="10" height="10" viewBox="0 0 11 11" fill="none"><path d="M9.2 5.5A3.8 3.8 0 1 1 5.5 1.7V0.5l2.3 2.3-2.3 2.3V3.2A2.7 2.7 0 1 0 8.2 5.5" stroke="currentColor" stroke-width="1" fill="none" stroke-linecap="round"/></svg>
+          replay
+        </span>
         <span class="det-time" id="det-time"></span>
       </div>
       <div class="tabs">
@@ -1257,11 +1521,11 @@ kbd {
       </button>
       <button class="abtn" id="copy-curl" disabled>
         <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><rect x="1.5" y="3.5" width="6.5" height="6" stroke="currentColor" stroke-width="1" fill="none"/><path d="M3.5 3.5V2.2a1.2 1.2 0 0 1 1.2-1.2h4.3a1.2 1.2 0 0 1 1.2 1.2v4.3a1.2 1.2 0 0 1-1.2 1.2H7.5" stroke="currentColor" stroke-width="1" fill="none"/></svg>
-        curl ⎘
+        curl
       </button>
       <button class="abtn" id="copy-fetch" disabled>
         <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><rect x="1.5" y="3.5" width="6.5" height="6" stroke="currentColor" stroke-width="1" fill="none"/><path d="M3.5 3.5V2.2a1.2 1.2 0 0 1 1.2-1.2h4.3a1.2 1.2 0 0 1 1.2 1.2v4.3a1.2 1.2 0 0 1-1.2 1.2H7.5" stroke="currentColor" stroke-width="1" fill="none"/></svg>
-        fetch ⎘
+        fetch
       </button>
       <div class="aspc"></div>
       <span class="ameta" id="ameta"></span>
@@ -1271,7 +1535,27 @@ kbd {
       <div class="kh"><kbd>↑↓</kbd> navigate</div>
       <div class="kh"><kbd>R</kbd> replay</div>
       <div class="kh"><kbd>C</kbd> copy url</div>
+      <div class="kh"><kbd>D</kbd> compare panel</div>
     </div>
+
+    <aside class="compare-panel" id="compare-panel" tabindex="0" aria-label="Payload comparison panel">
+      <div class="compare-head">
+        <div class="compare-title" id="compare-title">Comparing</div>
+        <div class="compare-actions">
+          <button class="small-btn" id="compare-view-toggle">Unified</button>
+          <button class="icon-btn" id="compare-close" aria-label="Close compare panel">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 2L10 10M10 2L2 10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="compare-tabs">
+        <button class="ctab active" data-ctab="body">Body Diff</button>
+        <button class="ctab" data-ctab="headers">Headers Diff</button>
+        <button class="ctab" data-ctab="meta">Metadata</button>
+        <button class="ctab" id="ignore-tab-btn" data-ctab="ignore">Ignore Fields</button>
+      </div>
+      <div class="compare-body" id="compare-body"></div>
+    </aside>
   </section>
 </div>
 
@@ -1282,7 +1566,16 @@ const state = {
   filter: 'all',
   tab: 'payload',
   status: { connected: false, state: 'connecting', tunnelUrl: '' },
-  ws: null
+  ws: null,
+  compare: {
+    aId: null,
+    bId: null,
+    open: false,
+    tab: 'body',
+    view: 'unified',
+    ignorePaths: new Set(),
+    hintUsed: false
+  }
 };
 
 const refs = {
@@ -1307,10 +1600,20 @@ const refs = {
   failedBadge: document.getElementById('fbadge'),
   dlqBanner: document.getElementById('dlq-banner'),
   dlqText: document.getElementById('dlq-txt'),
-  dlqReplayAll: document.getElementById('dlq-ra')
+  dlqReplayAll: document.getElementById('dlq-ra'),
+  compareHint: document.getElementById('compare-hint'),
+  comparePanel: document.getElementById('compare-panel'),
+  compareTitle: document.getElementById('compare-title'),
+  compareViewToggle: document.getElementById('compare-view-toggle'),
+  compareClose: document.getElementById('compare-close'),
+  compareBody: document.getElementById('compare-body'),
+  ignoreTabBtn: document.getElementById('ignore-tab-btn')
 };
 
 const wsPort = Number('__TERN_WS_PORT__') || (location.port ? Number(location.port) + 1 : 2020);
+const dynamicHeaders = new Set(['date', 'x-request-id', 'x-correlation-id', 'cf-ray', 'cf-connecting-ip', 'x-forwarded-for']);
+const defaultDynamicBody = ['id', 'created', 'created_at', 'updated_at', 'timestamp', 'event_id', 'idempotency_key', 'request_id'];
+const maxPayload = 50 * 1024;
 
 function showToast(message) {
   refs.toast.textContent = message;
@@ -1338,6 +1641,14 @@ function selectedEvent() {
   return state.events.find((event) => event.id === state.selectedId) || null;
 }
 
+function getEventById(id) {
+  return state.events.find((event) => event.id === id) || null;
+}
+
+function compareEvents() {
+  return { a: getEventById(state.compare.aId), b: getEventById(state.compare.bId) };
+}
+
 function filteredEvents() {
   if (state.filter === 'failed') return state.events.filter((event) => event.failed);
   if (state.filter === 'replayed') return state.events.filter((event) => event.replayedFrom);
@@ -1356,6 +1667,22 @@ function setStatus(status) {
   if (state.status.tunnelUrl) refs.tunnelInput.value = state.status.tunnelUrl;
 }
 
+function selectPrimary(id) {
+  state.selectedId = id;
+  state.compare.aId = id;
+  state.compare.bId = null;
+  state.compare.open = false;
+  state.compare.ignorePaths.clear();
+}
+
+function clearComparison() {
+  state.compare.aId = null;
+  state.compare.bId = null;
+  state.compare.open = false;
+  state.compare.ignorePaths.clear();
+  refs.comparePanel.classList.remove('open');
+}
+
 function renderList() {
   const events = filteredEvents();
   refs.eventCount.textContent = `${state.events.length} event${state.events.length === 1 ? '' : 's'}`;
@@ -1365,14 +1692,18 @@ function renderList() {
   refs.failedBadge.classList.toggle('show', failedCount > 0);
   refs.dlqBanner.classList.toggle('show', failedCount > 0);
   refs.dlqText.textContent = `${failedCount} event${failedCount === 1 ? '' : 's'} failed`;
+  refs.compareHint.classList.toggle('hide', state.compare.hintUsed);
 
   if (!events.length) {
     refs.eventList.innerHTML = `<div class="empty-list"><div class="empty-list-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="16" height="16" stroke="#6b6963" stroke-width="1"/><line x1="5" y1="7" x2="15" y2="7" stroke="#6b6963" stroke-width="1"/><line x1="5" y1="11" x2="15" y2="11" stroke="#6b6963" stroke-width="1"/><line x1="5" y1="15" x2="10" y2="15" stroke="#6b6963" stroke-width="1"/></svg></div><strong>No events</strong><span>Waiting for webhook traffic for this filter</span></div>`;
     return;
   }
 
-  refs.eventList.innerHTML = events.map((event) => `
-    <button class="event-row ${event.id === state.selectedId ? 'selected' : ''} ${event.failed ? 'failed' : ''}" data-id="${event.id}">
+  refs.eventList.innerHTML = events.map((event) => {
+    const isA = event.id === state.compare.aId;
+    const isB = event.id === state.compare.bId;
+    return `
+    <button class="event-row ${event.id === state.selectedId ? 'selected' : ''} ${event.failed ? 'failed' : ''} ${isA ? 'compare-a' : ''} ${isB ? 'compare-b' : ''}" data-id="${event.id}">
       <div class="row-top">
         <div class="row-left">
           <span class="meth">${escapeHtml(event.method)}</span>
@@ -1386,14 +1717,26 @@ function renderList() {
         <span>${relativeTime(event.receivedAt)}</span>
         <span class="row-lat">${event.latency || 0}ms</span>
       </div>
-    </button>
-  `).join('');
+    </button>`;
+  }).join('');
 
   refs.eventList.querySelectorAll('.event-row').forEach((row) => {
-    row.addEventListener('click', () => {
-      state.selectedId = row.getAttribute('data-id');
-      renderDetail();
-      renderList();
+    row.addEventListener('click', (ev) => {
+      const id = row.getAttribute('data-id');
+      const withModifier = ev.ctrlKey || ev.metaKey;
+      if (withModifier) {
+        if (!state.compare.aId) {
+          selectPrimary(id);
+        } else {
+          state.selectedId = id;
+          state.compare.bId = id;
+          state.compare.open = Boolean(state.compare.aId && state.compare.bId);
+          state.compare.hintUsed = true;
+        }
+      } else {
+        selectPrimary(id);
+      }
+      render();
     });
   });
 }
@@ -1416,7 +1759,7 @@ function renderDetail() {
   refs.detailTime.textContent = new Date(event.receivedAt).toLocaleString();
   refs.detailPlatform.style.display = event.platform ? 'inline-block' : 'none';
   refs.detailPlatform.textContent = event.platform || '';
-  refs.detailReplay.style.display = event.replayedFrom ? 'inline-block' : 'none';
+  refs.detailReplay.style.display = event.replayedFrom ? 'inline-flex' : 'none';
   refs.actionMeta.textContent = `${event.method} ${event.path}`;
 
   if (state.tab === 'payload') {
@@ -1435,16 +1778,283 @@ function renderDetail() {
   }
 }
 
+function detectProvider(headers = {}) {
+  const keys = new Set(Object.keys(headers).map((k) => k.toLowerCase()));
+  if (keys.has('stripe-signature')) return 'Stripe';
+  if (keys.has('x-github-event')) return 'GitHub';
+  if (keys.has('x-gitlab-event')) return 'GitLab';
+  if (keys.has('sentry-hook-resource')) return 'Sentry';
+  if (keys.has('x-twilio-signature')) return 'Twilio';
+  if (keys.has('svix-signature')) return 'Svix';
+  return 'Unknown';
+}
+
+function formatPayloadSize(body) {
+  const len = (body || '').length;
+  if (len < 1024) return `${len}b`;
+  return `${(len / 1024).toFixed(1)}kb`;
+}
+
+function truncatePayload(value) {
+  if (value.length <= maxPayload) return { value, truncated: false };
+  return { value: value.slice(0, maxPayload), truncated: true };
+}
+
+function looksBinary(value) {
+  if (!value) return false;
+  if (value.includes('�')) return true;
+  return /[--]/.test(value);
+}
+
+function parseJsonSafe(value) {
+  try { return { ok: true, value: JSON.parse(value) }; } catch { return { ok: false, value: null }; }
+}
+
+function collectJsonPaths(obj, base = '', out = new Set()) {
+  if (!obj || typeof obj !== 'object') return out;
+  for (const [k, v] of Object.entries(obj)) {
+    const path = base ? `${base}.${k}` : k;
+    out.add(path);
+    if (v && typeof v === 'object' && !Array.isArray(v)) collectJsonPaths(v, path, out);
+  }
+  return out;
+}
+
+function deletePath(obj, path) {
+  const parts = path.split('.');
+  let cur = obj;
+  for (let i = 0; i < parts.length - 1; i += 1) {
+    if (!cur || typeof cur !== 'object' || !(parts[i] in cur)) return;
+    cur = cur[parts[i]];
+  }
+  if (cur && typeof cur === 'object') delete cur[parts[parts.length - 1]];
+}
+
+function diffLines(a, b) {
+  const aLines = a.split('\n');
+  const bLines = b.split('\n');
+  const m = aLines.length;
+  const n = bLines.length;
+  const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  for (let i = m - 1; i >= 0; i -= 1) {
+    for (let j = n - 1; j >= 0; j -= 1) {
+      dp[i][j] = aLines[i] === bLines[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+    }
+  }
+
+  const out = [];
+  let i = 0;
+  let j = 0;
+  let lineA = 1;
+  let lineB = 1;
+  while (i < m && j < n) {
+    if (aLines[i] === bLines[j]) {
+      out.push({ type: 'equal', value: aLines[i], lineA, lineB });
+      i += 1; j += 1; lineA += 1; lineB += 1;
+    } else if (dp[i + 1][j] >= dp[i][j + 1]) {
+      out.push({ type: 'delete', value: aLines[i], lineA });
+      i += 1; lineA += 1;
+    } else {
+      out.push({ type: 'insert', value: bLines[j], lineB });
+      j += 1; lineB += 1;
+    }
+  }
+  while (i < m) { out.push({ type: 'delete', value: aLines[i], lineA }); i += 1; lineA += 1; }
+  while (j < n) { out.push({ type: 'insert', value: bLines[j], lineB }); j += 1; lineB += 1; }
+  return out;
+}
+
+function normalizeBodyForDiff(event, ignorePaths) {
+  const raw = event.body || '';
+  if (!raw) return { mode: 'empty', text: '(empty body)' };
+  if (looksBinary(raw)) return { mode: 'binary', text: '(binary body — cannot diff)' };
+
+  const { value, truncated } = truncatePayload(raw);
+  const parsed = parseJsonSafe(value);
+  if (!parsed.ok) return { mode: 'text', text: value, truncated };
+
+  const copy = JSON.parse(JSON.stringify(parsed.value));
+  for (const path of ignorePaths) deletePath(copy, path);
+  return { mode: 'json', text: JSON.stringify(copy, null, 2), parsed: copy, truncated };
+}
+
+function normalizeHeaders(headers = {}) {
+  return Object.entries(headers)
+    .map(([k, v]) => [k.toLowerCase(), String(v)])
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, v]) => `${k}: ${v}`)
+    .join('\n');
+}
+
+function renderUnifiedDiff(lines) {
+  if (!lines.length) return '<div class="compare-note">Payloads are identical</div>';
+  return `<div class="diff-list">${lines.map((line, idx) => {
+    const cls = `diff-line ${line.type} ${line.dynamic ? 'dynamic' : ''} ${idx < 50 ? 'anim' : ''}`;
+    const delay = idx < 50 ? `style="animation-delay:${idx * 5}ms"` : '';
+    const mark = line.type === 'delete' ? '−' : line.type === 'insert' ? '+' : ' ';
+    return `<div class="${cls}" ${delay}><span class="diff-lno">${line.lineA || ''}</span><span class="diff-lno">${line.lineB || ''}</span><span class="diff-mark">${mark}</span><span>${escapeHtml(line.value)}${line.dynamic ? '<span class="dynamic-note">(dynamic field — always changes)</span>' : ''}</span></div>`;
+  }).join('')}</div>`;
+}
+
+function renderSideBySideDiff(lines) {
+  const left = lines.map((line, idx) => {
+    const show = line.type !== 'insert';
+    if (!show) return '';
+    const cls = `diff-line ${line.type === 'delete' ? 'delete' : 'equal'} ${idx < 50 ? 'anim' : ''}`;
+    const delay = idx < 50 ? `style="animation-delay:${idx * 5}ms"` : '';
+    return `<div class="${cls}" ${delay}><span class="diff-lno">${line.lineA || ''}</span><span class="diff-lno"></span><span class="diff-mark">${line.type === 'delete' ? '−' : ' '}</span><span>${escapeHtml(line.value)}</span></div>`;
+  }).join('');
+  const right = lines.map((line, idx) => {
+    const show = line.type !== 'delete';
+    if (!show) return '';
+    const cls = `diff-line ${line.type === 'insert' ? 'insert' : 'equal'} ${idx < 50 ? 'anim' : ''}`;
+    const delay = idx < 50 ? `style="animation-delay:${idx * 5}ms"` : '';
+    return `<div class="${cls}" ${delay}><span class="diff-lno"></span><span class="diff-lno">${line.lineB || ''}</span><span class="diff-mark">${line.type === 'insert' ? '+' : ' '}</span><span>${escapeHtml(line.value)}</span></div>`;
+  }).join('');
+
+  return `<div class="side-by-side"><div class="side-col" id="side-a">${left}</div><div class="side-col" id="side-b">${right}</div></div>`;
+}
+
+function metadataRows(a, b) {
+  const ta = new Date(a.receivedAt).getTime();
+  const tb = new Date(b.receivedAt).getTime();
+  const deltaMs = tb - ta;
+  return [
+    ['Time', new Date(a.receivedAt).toLocaleTimeString('en-US', { hour12: false }) + `.${String(new Date(a.receivedAt).getMilliseconds()).padStart(3, '0')}`, new Date(b.receivedAt).toLocaleTimeString('en-US', { hour12: false }) + `.${String(new Date(b.receivedAt).getMilliseconds()).padStart(3, '0')}`],
+    ['Δ Time', '—', formatDelta(deltaMs)],
+    ['Method', a.method, b.method],
+    ['Path', a.path || '/', b.path || '/'],
+    ['Status', `${statusLabel(a)} ${a.failed ? '✗' : '✓'}`, `${statusLabel(b)} ${b.failed ? '✗' : '✓'}`],
+    ['Latency', `${a.latency || 0}ms`, `${b.latency || 0}ms`],
+    ['Payload Size', formatPayloadSize(a.body), formatPayloadSize(b.body)],
+    ['Provider Badge', detectProvider(a.headers), detectProvider(b.headers)]
+  ];
+}
+
+function formatDelta(ms) {
+  const sign = ms >= 0 ? '+' : '−';
+  const abs = Math.abs(ms);
+  if (abs < 1000) return `${sign}${Math.round(abs)}ms`;
+  if (abs < 60000) return `${sign}${(abs / 1000).toFixed(1)}s`;
+  const min = Math.floor(abs / 60000);
+  const sec = Math.floor((abs % 60000) / 1000);
+  return `${sign}${min}m ${sec}s`;
+}
+
+function deltaClass(ms) {
+  const abs = Math.abs(ms);
+  if (abs > 30000) return 'delta-danger';
+  if (abs >= 5000) return 'delta-warn';
+  return '';
+}
+
+function compareFingerprintMeta(a, b) {
+  return JSON.stringify(metadataRows(a, b));
+}
+
+function renderComparePanel() {
+  const { a, b } = compareEvents();
+  const open = Boolean(state.compare.open && a && b);
+  refs.comparePanel.classList.toggle('open', open);
+  if (!open) return;
+
+  const events = filteredEvents();
+  const ia = events.findIndex((e) => e.id === a.id);
+  const ib = events.findIndex((e) => e.id === b.id);
+  refs.compareTitle.textContent = `Comparing #${ia + 1} ↔ #${ib + 1}`;
+  refs.compareViewToggle.style.display = state.compare.tab === 'body' ? 'inline-block' : 'none';
+  refs.compareViewToggle.textContent = state.compare.view === 'unified' ? 'Unified' : 'Side by side';
+
+  document.querySelectorAll('.ctab').forEach((btn) => btn.classList.toggle('active', btn.dataset.ctab === state.compare.tab));
+
+  if (a.id === b.id) {
+    refs.compareBody.innerHTML = '<div class="compare-note">Select two different events to compare</div>';
+    return;
+  }
+
+  const normA = normalizeBodyForDiff(a, state.compare.ignorePaths);
+  const normB = normalizeBodyForDiff(b, state.compare.ignorePaths);
+  const parseA = parseJsonSafe(a.body || '');
+  const parseB = parseJsonSafe(b.body || '');
+
+  const notes = [];
+  if (normA.truncated || normB.truncated) notes.push('<div class="compare-warning">Payload truncated to 50kb for comparison</div>');
+  if ((parseA.ok && !parseB.ok) || (!parseA.ok && parseB.ok)) notes.push('<div class="compare-warning">Content types differ — diffing as plain text</div>');
+  if (normA.mode === 'binary' || normB.mode === 'binary') notes.push('<div class="compare-note">(binary body — cannot diff)</div>');
+
+  const useJson = parseA.ok && parseB.ok && normA.mode !== 'binary' && normB.mode !== 'binary';
+  const bodyA = useJson ? normA.text : (normA.mode === 'empty' ? '(empty body)' : normA.text);
+  const bodyB = useJson ? normB.text : (normB.mode === 'empty' ? '(empty body)' : normB.text);
+
+  const bodyDiff = diffLines(bodyA, bodyB);
+  const headersA = normalizeHeaders(a.headers || {});
+  const headersB = normalizeHeaders(b.headers || {});
+  const headerDiff = diffLines(headersA, headersB).map((line) => {
+    const key = line.value.split(':')[0]?.trim().toLowerCase();
+    if (dynamicHeaders.has(key)) line.dynamic = true;
+    return line;
+  });
+
+  const metaRows = metadataRows(a, b);
+  const deltaMs = new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime();
+
+  const identical = bodyA === bodyB && headersA === headersB && compareFingerprintMeta(a, b) === compareFingerprintMeta(b, a);
+  const identicalBanner = identical ? '<div class="identical-banner show">Events are identical (body, headers, and metadata match)</div>' : '';
+
+  if (state.compare.tab === 'body') {
+    const diffMarkup = state.compare.view === 'unified' ? renderUnifiedDiff(bodyDiff) : renderSideBySideDiff(bodyDiff);
+    refs.compareBody.innerHTML = `${identicalBanner}${notes.join('')}${diffMarkup}`;
+    bindSideSync();
+  } else if (state.compare.tab === 'headers') {
+    refs.compareBody.innerHTML = `${identicalBanner}${renderUnifiedDiff(headerDiff)}`;
+  } else if (state.compare.tab === 'meta') {
+    refs.compareBody.innerHTML = `${identicalBanner}<table class="meta-table"><thead><tr><th>Field</th><th>Event A</th><th>Event B</th></tr></thead><tbody>${metaRows.map(([k, va, vb]) => `<tr><td>${escapeHtml(k)}</td><td>${escapeHtml(String(va))}</td><td class="${k === 'Δ Time' ? deltaClass(deltaMs) : ''}">${escapeHtml(String(vb))}</td></tr>`).join('')}</tbody></table>`;
+  } else {
+    const paths = new Set();
+    if (parseA.ok) collectJsonPaths(parseA.value, '', paths);
+    if (parseB.ok) collectJsonPaths(parseB.value, '', paths);
+    const defaults = [...paths].filter((p) => defaultDynamicBody.includes(p.split('.').pop()));
+    if (!state.compare.ignorePaths.size && defaults.length) defaults.forEach((p) => state.compare.ignorePaths.add(p));
+    refs.ignoreTabBtn.textContent = `Ignore Fields${state.compare.ignorePaths.size ? ` (${state.compare.ignorePaths.size})` : ''}`;
+    refs.compareBody.innerHTML = `<div class="compare-note">Toggle fields to exclude them from body diff.</div><div class="ignore-list">${[...paths].sort().map((path) => `<label class="ignore-item"><input type="checkbox" data-ignore-path="${escapeHtml(path)}" ${state.compare.ignorePaths.has(path) ? 'checked' : ''}/> <span>${escapeHtml(path)}</span></label>`).join('') || '<div class="compare-note">No JSON fields detected in selected payloads.</div>'}</div>`;
+    refs.compareBody.querySelectorAll('[data-ignore-path]').forEach((input) => {
+      input.addEventListener('change', () => {
+        const raw = input.getAttribute('data-ignore-path');
+        if (input.checked) state.compare.ignorePaths.add(raw);
+        else state.compare.ignorePaths.delete(raw);
+        renderComparePanel();
+      });
+    });
+  }
+}
+
+function bindSideSync() {
+  const a = document.getElementById('side-a');
+  const b = document.getElementById('side-b');
+  if (!a || !b) return;
+  let syncing = false;
+  const sync = (src, dst) => {
+    if (syncing) return;
+    syncing = true;
+    dst.scrollTop = src.scrollTop;
+    requestAnimationFrame(() => { syncing = false; });
+  };
+  a.addEventListener('scroll', () => sync(a, b));
+  b.addEventListener('scroll', () => sync(b, a));
+}
+
 function render() {
   renderList();
   renderDetail();
+  refs.ignoreTabBtn.textContent = `Ignore Fields${state.compare.ignorePaths.size ? ` (${state.compare.ignorePaths.size})` : ''}`;
+  renderComparePanel();
 }
 
 function upsertEvent(event) {
   const idx = state.events.findIndex((item) => item.id === event.id);
   if (idx === -1) {
     state.events.unshift(event);
-    if (!state.selectedId) state.selectedId = event.id;
+    if (!state.selectedId) selectPrimary(event.id);
   } else {
     state.events[idx] = event;
   }
@@ -1464,6 +2074,7 @@ function connectWs() {
     } else if (data.type === 'clear') {
       state.events = [];
       state.selectedId = null;
+      clearComparison();
       render();
     } else if (data.type === 'status') {
       setStatus(data);
@@ -1481,7 +2092,7 @@ async function loadInitial() {
   const eventsData = await eventsRes.json();
   const statusData = await statusRes.json();
   state.events = eventsData.events || [];
-  state.selectedId = state.events[0]?.id || null;
+  if (state.events[0]) selectPrimary(state.events[0].id);
   setStatus(statusData);
   render();
 }
@@ -1501,6 +2112,7 @@ refs.clearBtn.addEventListener('click', async () => {
   await fetch('/api/clear', { method: 'POST' });
   state.events = [];
   state.selectedId = null;
+  clearComparison();
   render();
 });
 
@@ -1532,7 +2144,11 @@ refs.copyCurl.addEventListener('click', async () => {
 refs.copyFetch.addEventListener('click', async () => {
   const event = selectedEvent();
   if (!event) return;
-  const snippet = `await fetch('${refs.tunnelInput.value}${event.path}', {\n  method: '${event.method}',\n  headers: ${JSON.stringify(event.headers || {}, null, 2)},\n  body: ${JSON.stringify(event.body || '')}\n});`;
+  const snippet = `await fetch('${refs.tunnelInput.value}${event.path}', {
+  method: '${event.method}',
+  headers: ${JSON.stringify(event.headers || {}, null, 2)},
+  body: ${JSON.stringify(event.body || '')}
+});`;
   await navigator.clipboard.writeText(snippet);
   showToast('fetch snippet copied');
 });
@@ -1555,8 +2171,77 @@ document.querySelectorAll('.tab').forEach((btn) => {
   });
 });
 
+document.querySelectorAll('.ctab').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    state.compare.tab = btn.dataset.ctab;
+    renderComparePanel();
+  });
+});
+
+refs.compareClose.addEventListener('click', () => {
+  clearComparison();
+  state.selectedId = null;
+  render();
+});
+
+refs.compareViewToggle.addEventListener('click', () => {
+  state.compare.view = state.compare.view === 'unified' ? 'side' : 'unified';
+  renderComparePanel();
+});
+
 document.addEventListener('keydown', (e) => {
-  if (e.key.toLowerCase() === 'c' && !e.ctrlKey && !e.metaKey) refs.copyBtn.click();
+  const key = e.key.toLowerCase();
+  const events = filteredEvents();
+  const currentIndex = events.findIndex((ev) => ev.id === state.selectedId);
+
+  if (e.key === 'ArrowDown' && events.length) {
+    e.preventDefault();
+    const next = events[Math.min(events.length - 1, Math.max(0, currentIndex + 1))];
+    if (next) { selectPrimary(next.id); render(); }
+  }
+
+  if (e.key === 'ArrowUp' && events.length) {
+    e.preventDefault();
+    const prev = events[Math.max(0, currentIndex - 1)];
+    if (prev) { selectPrimary(prev.id); render(); }
+  }
+
+  if (key === 'r' && !e.ctrlKey && !e.metaKey) refs.replayBtn.click();
+  if (key === 'c' && !e.ctrlKey && !e.metaKey) refs.copyBtn.click();
+
+  if (key === 'd' && state.compare.aId && state.compare.bId) {
+    state.compare.open = true;
+    refs.comparePanel.classList.add('open');
+    refs.comparePanel.focus();
+    renderComparePanel();
+  }
+
+  if (e.key === 'Escape') {
+    if (state.compare.open || state.compare.aId || state.compare.bId) {
+      clearComparison();
+      state.selectedId = null;
+      render();
+      return;
+    }
+    state.selectedId = null;
+    renderDetail();
+    renderList();
+  }
+
+  const panelFocused = state.compare.open && refs.comparePanel.contains(document.activeElement);
+  if (panelFocused && e.key === 'Tab') {
+    e.preventDefault();
+    const tabs = ['body', 'headers', 'meta', 'ignore'];
+    const idx = tabs.indexOf(state.compare.tab);
+    state.compare.tab = tabs[(idx + 1) % tabs.length];
+    renderComparePanel();
+  }
+
+  if (state.compare.open && ['1', '2', '3', '4'].includes(e.key)) {
+    const map = { '1': 'body', '2': 'headers', '3': 'meta', '4': 'ignore' };
+    state.compare.tab = map[e.key];
+    renderComparePanel();
+  }
 });
 
 loadInitial().then(connectWs).catch(() => showToast('Failed to load dashboard data'));
