@@ -41,7 +41,9 @@ export function info(message: string): void {
 }
 
 export function success(message: string): void {
-  process.stdout.write(`${withColor(ANSI.green, PREFIX)} ${withColor(ANSI.green, message)}\n`);
+  process.stdout.write(
+    `${withColor(ANSI.green, PREFIX)} ${withColor(ANSI.green, message)}\n`,
+  );
 }
 
 export function warn(message: string): void {
@@ -49,40 +51,61 @@ export function warn(message: string): void {
 }
 
 export function error(message: string): void {
-  process.stderr.write(`${withColor(ANSI.red, `${PREFIX} error:`)} ${withColor(ANSI.red, message)}\n`);
+  process.stderr.write(
+    `${withColor(ANSI.red, `${PREFIX} error:`)} ${withColor(ANSI.red, message)}\n`,
+  );
 }
 
 export function printLogo(version: string): void {
   const logo = [
-    " ████████╗███████╗██████╗ ███╗",
-    "    ██╔══╝██╔════╝██╔══██╗████╗",
-    "    ██║   █████╗  ██████╔╝██╔██╗",
-    "    ██║   ██╔══╝  ██╔══██╗██║╚█",
-    "    ██║   ███████╗██║  ██║██║",
-    "    ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝",
+    "  ████████╗███████╗██████╗ ███╗  ██╗",
+    "     ██║   ██╔════╝██╔══██╗████╗ ██║",
+    "     ██║   █████╗  ██████╔╝██╔██╗██║",
+    "     ██║   ██╔══╝  ██╔══██╗██║╚████║",
+    "     ██║   ███████╗██║  ██║██║ ╚███║",
+    "     ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚══╝",
   ];
 
   process.stdout.write(`\n${withColor(ANSI.green, logo.join("\n"))}\n`);
-  process.stdout.write(`${ANSI.gray}v${version} · open source webhook tunnel${ANSI.reset}\n`);
+  process.stdout.write(
+    `${ANSI.gray}  v${version} · open source webhook tunnel${ANSI.reset}\n`,
+  );
 }
 
-export function printBanner(tunnelUrl: string, forwardTarget: string, uiPort: number, noUi: boolean): void {
+export function printBanner(
+  tunnelUrl: string,
+  forwardTarget: string,
+  uiPort: number,
+  noUi: boolean,
+): void {
   process.stdout.write("\n");
-  process.stdout.write(`${formatLabel("tunnel")} ${withColor(ANSI.green, tunnelUrl)}\n`);
+  process.stdout.write(
+    `  ${formatLabel("tunnel")}     ${withColor(ANSI.green, tunnelUrl)}\n`,
+  );
   if (!noUi) {
-    process.stdout.write(`${formatLabel("dashboard")} ${withColor(ANSI.cyan, `http://localhost:${uiPort}`)}\n`);
+    process.stdout.write(
+      `  ${formatLabel("dashboard")}  ${withColor(ANSI.cyan, `http://localhost:${uiPort}`)}\n`,
+    );
   }
-  process.stdout.write(`${formatLabel("forwarding")} ${withColor(ANSI.white, forwardTarget)}\n`);
+  process.stdout.write(
+    `  ${formatLabel("forwarding")} ${withColor(ANSI.white, forwardTarget)}\n`,
+  );
   process.stdout.write("\n");
-  process.stdout.write(`${ANSI.gray}Ctrl+C to end session · use --ttl 60 to auto-kill${ANSI.reset}\n\n`);
+  process.stdout.write(
+    `  ${ANSI.gray}Ctrl+C to end session · use --ttl 60 to auto-kill${ANSI.reset}\n\n`,
+  );
 }
 
 export function printSafetyBanner(ttl?: number): void {
   if (ttl === undefined) {
-    process.stdout.write(`${ANSI.gray}no ttl set — tunnel runs until Ctrl+C${ANSI.reset}\n`);
+    process.stdout.write(
+      `  ${ANSI.gray}no ttl set — tunnel runs until Ctrl+C${ANSI.reset}\n\n`,
+    );
     return;
   }
-  process.stdout.write(`${ANSI.gray}auto-kill in ${ttl} minutes${ANSI.reset}\n`);
+  process.stdout.write(
+    `  ${ANSI.gray}auto-kill in ${ttl} minutes${ANSI.reset}\n\n`,
+  );
 }
 
 export function printHelp(version: string): void {
@@ -92,6 +115,7 @@ export function printHelp(version: string): void {
     "",
     "Usage:",
     "  npx @hookflo/tern-dev --port <port> [options]",
+    "  npx @hookflo/tern-dev --forward localhost:3000/api/webhooks",
     "",
     "Options:",
     "  --port          Local app port to forward to (required)",
@@ -115,6 +139,7 @@ export function printHelp(version: string): void {
     "",
     "Examples:",
     "  npx @hookflo/tern-dev --port 3000",
+    "  npx @hookflo/tern-dev --forward localhost:3000/api/webhooks",
     "  npx @hookflo/tern-dev --port 3000 --ttl 60",
     "  npx @hookflo/tern-dev --port 3000 --relay wss://your-relay.com",
     "",
