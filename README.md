@@ -25,7 +25,7 @@ npx @hookflo/tern-dev --port 3000
      ██║   ███████╗██║  ██║██║ ╚███║
      ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚══╝
 
-  v0.2.1 · open source webhook tunnel
+  v0.2.2 · open source webhook tunnel
 
   tunnel    →  https://abc123.relay.tern.hookflo.com
   dashboard →  http://localhost:2019

@@ -6,3 +6,4 @@ tern.config.json
 tern-audit.log
 *.pem
 *.key
+.DS_Store

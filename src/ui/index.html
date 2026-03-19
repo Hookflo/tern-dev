@@ -1,2263 +1,2682 @@
 <!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>tern · dashboard</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<style>
-:root {
-  --bg: #0a0a0a;
-  --bg-secondary: #0f0f0f;
-  --bg-tertiary: #141414;
-  --bg-quaternary: #1a1a1a;
-  --surface: #0d0d0d;
-  --surface-hover: #121212;
-  --border: rgba(255, 255, 255, 0.05);
-  --border-secondary: rgba(255, 255, 255, 0.08);
-  --border-tertiary: rgba(255, 255, 255, 0.12);
-  --text-primary: #f0ede8;
-  --text-secondary: #b0ada5;
-  --text-tertiary: #6b6963;
-  --text-quaternary: #4a4741;
-  --accent: #10b981;
-  --accent-dim: #059669;
-  --accent-bg: rgba(16, 185, 129, 0.06);
-  --accent-border: rgba(16, 185, 129, 0.2);
-  --error: #ef4444;
-  --error-bg: rgba(239, 68, 68, 0.06);
-  --error-border: rgba(239, 68, 68, 0.2);
-  --warning: #f59e0b;
-  --info: #3b82f6;
-  --info-bg: rgba(59, 130, 246, 0.06);
-  --info-border: rgba(59, 130, 246, 0.2);
-  --accent-blue: #3b82f6;
-  --accent-blue-bg: rgba(59, 130, 246, 0.08);
-  --accent-blue-border: rgba(59, 130, 246, 0.25);
-  --accent-amber: #f59e0b;
-  --accent-amber-bg: rgba(245, 158, 11, 0.09);
-  --accent-amber-border: rgba(245, 158, 11, 0.25);
-  --diff-remove-bg: rgba(239, 68, 68, 0.14);
-  --diff-add-bg: rgba(16, 185, 129, 0.16);
-  --mono: 'IBM Plex Mono', 'JetBrains Mono', monospace;
-  --sans: 'IBM Plex Sans', system-ui, sans-serif;
-}
-
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
-}
-
-html, body {
-  height: 100%;
-  overflow: auto;
-}
-
-body {
-  font-family: var(--mono);
-  background: var(--bg);
-  color: var(--text-primary);
-  font-size: 12px;
-  line-height: 1.6;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0, 0, 0, 0.03) 2px,
-    rgba(0, 0, 0, 0.03) 4px
-  );
-  pointer-events: none;
-  z-index: 999;
-}
-
-/* Header */
-.header {
-  height: 48px;
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-secondary);
-  display: flex;
-  align-items: center;
-  padding: 0 18px;
-  gap: 0;
-  backdrop-filter: blur(12px);
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding-right: 18px;
-  border-right: 1px solid var(--border-secondary);
-  margin-right: 18px;
-  flex-shrink: 0;
-}
-
-.brand-icon {
-  width: 24px;
-  height: 24px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.brand-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  font-family: var(--mono);
-}
-
-.brand-ver {
-  font-size: 9px;
-  color: var(--text-tertiary);
-  letter-spacing: 0.05em;
-  margin-top: 2px;
-  font-family: var(--mono);
-}
-
-.tunnel-section {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex: 1;
-  min-width: 0;
-}
-
-.tunnel-label {
-  font-size: 9px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-tertiary);
-  flex-shrink: 0;
-  font-weight: 500;
-}
-
-.tunnel-url-wrap {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-secondary);
-  padding: 5px 10px;
-  flex: 1;
-  min-width: 0;
-  max-width: 500px;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-}
-
-.tunnel-url-wrap:hover {
-  border-color: var(--border-tertiary);
-  background: var(--bg-quaternary);
-}
-
-.tunnel-url {
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--accent);
-  background: transparent;
-  border: none;
-  outline: none;
-  flex: 1;
-  min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  cursor: default;
-  user-select: all;
-}
-
-.copy-btn {
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-tertiary);
-  background: transparent;
-  border: 1px solid var(--border-secondary);
-  padding: 3px 9px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  flex-shrink: 0;
-  border-radius: 4px;
-  font-weight: 500;
-}
-
-.copy-btn:hover {
-  color: var(--accent);
-  border-color: var(--accent-border);
-  background: var(--accent-bg);
-}
-
-.copy-btn.copied {
-  color: var(--accent);
-  border-color: var(--accent-border);
-  background: var(--accent-bg);
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  margin-left: auto;
-  padding-left: 18px;
-  border-left: 1px solid var(--border-secondary);
-  flex-shrink: 0;
-}
-
-.stat-pill {
-  font-size: 10px;
-  color: var(--text-tertiary);
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border);
-  padding: 3px 10px;
-  letter-spacing: 0.04em;
-  border-radius: 4px;
-  font-weight: 500;
-}
-
-.status-ind {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-tertiary);
-  font-weight: 500;
-}
-
-.sdot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--text-tertiary);
-  flex-shrink: 0;
-  position: relative;
-  transition: all 0.3s ease;
-}
-
-.sdot.live {
-  background: var(--accent);
-  box-shadow: 0 0 8px var(--accent), inset 0 0 4px rgba(16, 185, 129, 0.4);
-}
-
-.sdot.live::after {
-  content: '';
-  position: absolute;
-  inset: -4px;
-  border-radius: 50%;
-  background: var(--accent);
-  opacity: 0.2;
-  animation: ripple 2s ease-out infinite;
-}
-
-.sdot.connecting {
-  background: var(--warning);
-  animation: blink 0.8s ease-in-out infinite;
-}
-
-.sdot.disconnected {
-  background: var(--error);
-}
-
-@keyframes ripple {
-  0% {
-    transform: scale(1);
-    opacity: 0.3;
-  }
-  100% {
-    transform: scale(3);
-    opacity: 0;
-  }
-}
-
-@keyframes blink {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.3;
-  }
-}
-
-/* Layout */
-.layout {
-  display: grid;
-  grid-template-columns: 320px 1fr;
-  height: calc(100vh - 48px);
-  min-height: 0;
-  gap: 0;
-}
-
-/* Left Panel */
-.left-panel {
-  border-right: 1px solid var(--border-secondary);
-  display: flex;
-  flex-direction: column;
-  background: var(--bg-secondary);
-  overflow: hidden;
-}
-
-.panel-top {
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-shrink: 0;
-  gap: 8px;
-}
-
-.filters {
-  display: flex;
-  gap: 4px;
-}
-
-.filter {
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-tertiary);
-  background: transparent;
-  border: 1px solid transparent;
-  padding: 4px 10px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  border-radius: 4px;
-  font-weight: 500;
-}
-
-.filter:hover {
-  color: var(--text-secondary);
-  border-color: var(--border-tertiary);
-}
-
-.filter.active {
-  color: var(--accent);
-  border-color: var(--accent-border);
-  background: var(--accent-bg);
-}
-
-.fail-badge {
-  font-size: 8px;
-  font-weight: 700;
-  background: var(--error);
-  color: #fff;
-  padding: 0 4px;
-  border-radius: 2px;
-  line-height: 14px;
-  display: none;
-}
-
-.fail-badge.show {
-  display: inline;
-}
-
-.clr-btn {
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-tertiary);
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 4px 8px;
-  transition: all 0.15s ease;
-  font-weight: 500;
-}
-
-.clr-btn:hover {
-  color: var(--error);
-}
-
-.dlq-banner {
-  display: none;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 14px;
-  background: var(--error-bg);
-  border-bottom: 1px solid var(--error-border);
-  flex-shrink: 0;
-}
-
-.dlq-banner.show {
-  display: flex;
-}
-
-.dlq-txt {
-  font-size: 10px;
-  color: var(--error);
-  flex: 1;
-  letter-spacing: 0.02em;
-  font-weight: 500;
-}
-
-.dlq-ra {
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--error);
-  background: transparent;
-  border: 1px solid var(--error-border);
-  padding: 2px 8px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  border-radius: 4px;
-  font-weight: 600;
-}
-
-.dlq-ra:hover {
-  background: var(--error-bg);
-}
-
-.event-list {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-}
-
-.event-list::-webkit-scrollbar {
-  width: 6px;
-}
-
-.event-list::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.event-list::-webkit-scrollbar-thumb {
-  background: var(--border-secondary);
-  border-radius: 3px;
-}
-
-.event-list::-webkit-scrollbar-thumb:hover {
-  background: var(--border-tertiary);
-}
-
-.empty-list {
-  padding: 40px 18px;
-  text-align: center;
-}
-
-.empty-list-icon {
-  margin: 0 auto 14px;
-  width: 40px;
-  height: 40px;
-  border: 1px solid var(--border-secondary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  background: var(--bg-tertiary);
-}
-
-.empty-list strong {
-  display: block;
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  letter-spacing: 0.04em;
-  margin-bottom: 8px;
-}
-
-.empty-list span {
-  font-size: 10px;
-  color: var(--text-tertiary);
-  line-height: 1.7;
-}
-
-.event-row {
-  display: block;
-  width: 100%;
-  text-align: left;
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid var(--border);
-  padding: 10px 14px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  position: relative;
-}
-
-.event-row:hover {
-  background: var(--bg-tertiary);
-}
-
-.event-row.selected {
-  background: var(--bg-tertiary);
-  border-left: 3px solid var(--accent);
-  padding-left: 11px;
-}
-
-.event-row.compare-a {
-  border-left: 3px solid var(--accent-blue);
-  background: var(--accent-blue-bg);
-  padding-left: 11px;
-}
-
-.event-row.compare-b {
-  border-left: 3px solid var(--accent-amber);
-  background: var(--accent-amber-bg);
-  padding-left: 11px;
-}
-
-.event-row.failed {
-  border-left: 3px solid var(--error);
-  padding-left: 11px;
-}
-
-.event-row.failed.selected {
-  border-left-color: var(--error);
-}
-
-.row-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 7px;
-  margin-bottom: 6px;
-}
-
-.row-left {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  min-width: 0;
-  flex: 1;
-}
-
-.meth {
-  font-size: 8px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  background: var(--bg-quaternary);
-  border: 1px solid var(--border-secondary);
-  color: var(--text-secondary);
-  padding: 2px 6px;
-  flex-shrink: 0;
-  border-radius: 3px;
-}
-
-.row-plat {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-primary);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.rtag {
-  font-size: 8px;
-  color: var(--info);
-  background: var(--info-bg);
-  border: 1px solid var(--info-border);
-  padding: 1px 5px;
-  flex-shrink: 0;
-  letter-spacing: 0.04em;
-  border-radius: 3px;
-  font-weight: 500;
-}
-
-.sbadge {
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  padding: 2px 7px;
-  flex-shrink: 0;
-  border: 1px solid transparent;
-  border-radius: 3px;
-  text-transform: uppercase;
-}
-
-.sbadge.ok {
-  color: var(--accent);
-  background: var(--accent-bg);
-  border-color: var(--accent-border);
-}
-
-.sbadge.fail {
-  color: var(--error);
-  background: var(--error-bg);
-  border-color: var(--error-border);
-}
-
-.sbadge.pend {
-  color: var(--text-tertiary);
-  background: var(--bg-quaternary);
-  border-color: var(--border-secondary);
-}
-
-.row-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 10px;
-  color: var(--text-tertiary);
-}
-
-.row-path {
-  flex: 1;
-  min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.row-lat {
-  flex-shrink: 0;
-  color: var(--accent);
-  font-weight: 500;
-}
-
-/* Right Panel */
-.right-panel {
-  display: flex;
-  flex-direction: column;
-  background: var(--bg);
-  overflow: hidden;
-  min-height: 0;
-}
-
-.det-header {
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-secondary);
-  flex-shrink: 0;
-}
-
-.det-meta {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  padding: 12px 18px 0;
-  flex-wrap: wrap;
-}
-
-.det-id {
-  font-size: 10px;
-  color: var(--text-tertiary);
-  letter-spacing: 0.02em;
-  font-family: var(--mono);
-}
-
-.det-plat {
-  font-size: 9px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--accent);
-  background: var(--accent-bg);
-  border: 1px solid var(--accent-border);
-  padding: 2px 8px;
-  display: none;
-  border-radius: 4px;
-  font-weight: 600;
-}
-
-.det-replay {
-  font-size: 9px;
-  color: var(--info);
-  background: var(--info-bg);
-  border: 1px solid var(--info-border);
-  padding: 2px 7px;
-  display: none;
-  letter-spacing: 0.04em;
-  border-radius: 4px;
-  font-weight: 600;
-}
-
-.det-time {
-  font-size: 9px;
-  color: var(--text-tertiary);
-  margin-left: auto;
-  letter-spacing: 0.02em;
-}
-
-.tabs {
-  display: flex;
-  padding: 0 18px;
-  margin-top: 6px;
-  border-bottom: 1px solid var(--border);
-  gap: 0;
-}
-
-.tab {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.07em;
-  text-transform: uppercase;
-  color: var(--text-tertiary);
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
-  padding: 7px 14px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  font-weight: 500;
-}
-
-.tab:hover {
-  color: var(--text-secondary);
-}
-
-.tab.active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
-}
-
-.det-body {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  padding: 18px;
-  min-height: 0;
-}
-
-.det-body::-webkit-scrollbar {
-  width: 6px;
-}
-
-.det-body::-webkit-scrollbar-thumb {
-  background: var(--border-secondary);
-  border-radius: 3px;
-}
-
-.empty-det {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  gap: 14px;
-}
-
-.empty-det-icon {
-  width: 70px;
-  height: 70px;
-  border: 1px solid var(--border-secondary);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-  background: var(--bg-secondary);
-  border-radius: 8px;
-}
-
-.empty-det-icon::before,
-.empty-det-icon::after {
-  content: '';
-  position: absolute;
-  background: var(--accent);
-  opacity: 0.2;
-}
-
-.empty-det-icon::before {
-  width: 1px;
-  height: 100%;
-  left: 50%;
-}
-
-.empty-det-icon::after {
-  height: 1px;
-  width: 100%;
-  top: 50%;
-}
-
-.empty-det strong {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-}
-
-.empty-det span {
-  font-size: 10px;
-  color: var(--text-tertiary);
-  line-height: 1.8;
-  max-width: 250px;
-}
-
-.codeblock {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-secondary);
-  overflow: hidden;
-  border-radius: 6px;
-  margin-bottom: 14px;
-}
-
-.codeblock-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg-tertiary);
-}
-
-.code-lbl {
-  font-size: 9px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-tertiary);
-  font-weight: 600;
-}
-
-.code-cp {
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--text-tertiary);
-  background: transparent;
-  border: 1px solid var(--border-secondary);
-  padding: 2px 8px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  border-radius: 4px;
-  font-weight: 600;
-}
-
-.code-cp:hover,
-.code-cp.copied {
-  color: var(--accent);
-  border-color: var(--accent-border);
-  background: var(--accent-bg);
-}
-
-.codeblock pre {
-  margin: 0;
-  padding: 14px;
-  font-family: var(--mono);
-  font-size: 11px;
-  color: var(--text-secondary);
-  white-space: pre-wrap;
-  word-break: break-word;
-  line-height: 1.8;
-  max-height: calc(100vh - 320px);
-  overflow-y: auto;
-}
-
-.htable {
-  width: 100%;
-  border-collapse: collapse;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-secondary);
-  border-radius: 6px;
-  overflow: hidden;
-  margin-bottom: 14px;
-}
-
-.htable tr {
-  border-bottom: 1px solid var(--border);
-}
-
-.htable tr:last-child {
-  border-bottom: none;
-}
-
-.htable tr.is-sig {
-  background: rgba(16, 185, 129, 0.03);
-}
-
-.htable td {
-  padding: 10px 14px;
-  font-family: var(--mono);
-  font-size: 10px;
-  vertical-align: top;
-}
-
-.htable td:first-child {
-  color: var(--text-tertiary);
-  width: 240px;
-  white-space: nowrap;
-  border-right: 1px solid var(--border);
-  font-weight: 500;
-}
-
-.htable td:last-child {
-  color: var(--text-secondary);
-  word-break: break-all;
-}
-
-.htable tr.is-sig td:first-child {
-  color: var(--accent);
-  font-weight: 600;
-}
-
-.sig-tag {
-  font-size: 8px;
-  color: var(--accent);
-  background: var(--accent-bg);
-  border: 1px solid var(--accent-border);
-  padding: 0 4px;
-  margin-left: 6px;
-  vertical-align: middle;
-  border-radius: 3px;
-  font-weight: 600;
-}
-
-.stat-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 10px;
-  margin-bottom: 14px;
-}
-
-.stat-box {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-secondary);
-  padding: 14px;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-}
-
-.stat-box:hover {
-  border-color: var(--border-tertiary);
-}
-
-.stat-lbl {
-  font-size: 9px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--text-tertiary);
-  margin-bottom: 8px;
-  font-weight: 600;
-}
-
-.stat-val {
-  font-size: 24px;
-  font-weight: 700;
-  color: var(--text-primary);
-  letter-spacing: -0.02em;
-  line-height: 1;
-}
-
-.stat-val.ok {
-  color: var(--accent);
-}
-
-.stat-val.fail {
-  color: var(--error);
-}
-
-.verify-box {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-secondary);
-  padding: 18px;
-  border-radius: 6px;
-  margin-bottom: 14px;
-}
-
-.verify-title {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.verify-title::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: var(--border-secondary);
-}
-
-.verify-body {
-  font-size: 11px;
-  color: var(--text-tertiary);
-  line-height: 1.8;
-}
-
-.verify-body code {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--accent);
-  background: var(--accent-bg);
-  border: 1px solid var(--accent-border);
-  padding: 2px 6px;
-  border-radius: 3px;
-  font-weight: 500;
-}
-
-.action-bar {
-  flex-shrink: 0;
-  padding: 12px 18px;
-  border-top: 1px solid var(--border-secondary);
-  background: var(--bg-secondary);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.abtn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  border: 1px solid var(--border-secondary);
-  background: var(--bg-tertiary);
-  color: var(--text-secondary);
-  padding: 6px 13px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  white-space: nowrap;
-  border-radius: 5px;
-  font-weight: 600;
-}
-
-.abtn:hover:not(:disabled) {
-  border-color: var(--border-tertiary);
-  color: var(--text-primary);
-  background: var(--bg-quaternary);
-}
-
-.abtn:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-}
-
-.abtn:disabled:hover {
-  border-color: var(--border-secondary);
-  color: var(--text-secondary);
-  background: var(--bg-tertiary);
-}
-
-.abtn.primary {
-  background: var(--accent-bg);
-  border-color: var(--accent-border);
-  color: var(--accent);
-}
-
-.abtn.primary:hover:not(:disabled) {
-  background: rgba(16, 185, 129, 0.12);
-  border-color: var(--accent);
-}
-
-.abtn.primary:disabled {
-  opacity: 0.5;
-}
-
-.abtn.primary:disabled:hover {
-  background: var(--accent-bg);
-  color: var(--accent);
-}
-
-.aspc {
-  flex: 1;
-}
-
-.ameta {
-  font-family: var(--mono);
-  font-size: 10px;
-  color: var(--text-tertiary);
-  letter-spacing: 0.03em;
-}
-
-.kbd-bar {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 8px 18px;
-  border-top: 1px solid var(--border);
-  background: var(--bg-secondary);
-  flex-shrink: 0;
-  font-size: 9px;
-}
-
-.kh {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  color: var(--text-tertiary);
-  letter-spacing: 0.04em;
-  font-weight: 500;
-}
-
-kbd {
-  font-family: var(--mono);
-  font-size: 8px;
-  background: var(--bg-tertiary);
-  border: 1px solid var(--border-secondary);
-  padding: 2px 5px;
-  color: var(--text-secondary);
-  border-radius: 3px;
-  font-weight: 600;
-}
-
-.toast {
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%) translateY(6px);
-  background: var(--bg-tertiary);
-  border: 1px solid var(--accent-border);
-  color: var(--accent);
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.06em;
-  padding: 10px 16px;
-  opacity: 0;
-  pointer-events: none;
-  transition: all 0.2s ease;
-  z-index: 9999;
-  white-space: nowrap;
-  border-radius: 5px;
-  font-weight: 600;
-}
-
-.toast.show {
-  opacity: 1;
-  transform: translateX(-50%) translateY(0);
-}
-
-.compare-hint {
-  font-size: 10px;
-  color: var(--text-tertiary);
-  padding: 7px 14px;
-  border-bottom: 1px solid var(--border);
-  background: var(--bg-secondary);
-}
-
-.compare-hint.hide {
-  display: none;
-}
-
-.compare-panel {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: min(50vw, 780px);
-  height: 100%;
-  background: var(--bg-secondary);
-  border-left: 1px solid var(--border-secondary);
-  z-index: 20;
-  transform: translateX(100%);
-  transition: transform 200ms ease-out;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.compare-panel.open {
-  transform: translateX(0);
-}
-
-.right-panel {
-  position: relative;
-}
-
-.compare-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 14px;
-  border-bottom: 1px solid var(--border-secondary);
-}
-
-.compare-title {
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  color: var(--text-secondary);
-}
-
-.compare-actions {
-  margin-left: auto;
-  display: flex;
-  gap: 8px;
-}
-
-.icon-btn, .small-btn {
-  border: 1px solid var(--border-secondary);
-  background: var(--bg-tertiary);
-  color: var(--text-secondary);
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all .15s ease;
-}
-
-.icon-btn {
-  width: 28px;
-  height: 28px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.small-btn {
-  padding: 4px 8px;
-  font-family: var(--mono);
-  font-size: 9px;
-}
-
-.icon-btn:hover, .small-btn:hover {
-  border-color: var(--border-tertiary);
-  color: var(--text-primary);
-}
-
-.compare-tabs {
-  display: flex;
-  border-bottom: 1px solid var(--border);
-}
-
-.ctab {
-  flex: 1;
-  border: none;
-  background: transparent;
-  color: var(--text-tertiary);
-  font-family: var(--mono);
-  font-size: 10px;
-  padding: 8px 6px;
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-}
-
-.ctab.active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
-}
-
-.compare-body {
-  flex: 1;
-  min-height: 0;
-  overflow: auto;
-  padding: 12px;
-  animation: tabFade 150ms ease;
-}
-
-@keyframes tabFade {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.identical-banner {
-  background: var(--accent-bg);
-  border: 1px solid var(--accent-border);
-  color: var(--accent);
-  padding: 8px 10px;
-  border-radius: 6px;
-  margin-bottom: 10px;
-  font-size: 10px;
-  display: none;
-  animation: identFade 150ms ease;
-}
-
-.identical-banner.show {
-  display: block;
-}
-
-@keyframes identFade {
-  from { opacity: 0; transform: scale(0.98); }
-  to { opacity: 1; transform: scale(1); }
-}
-
-.diff-list {
-  border: 1px solid var(--border-secondary);
-  border-radius: 6px;
-  overflow: hidden;
-}
-
-.diff-line {
-  display: grid;
-  grid-template-columns: 36px 36px 20px 1fr;
-  gap: 8px;
-  padding: 2px 10px;
-  font-family: var(--mono);
-  font-size: 11px;
-  line-height: 1.55;
-  opacity: 1;
-}
-
-.diff-line.anim {
-  opacity: 0;
-  animation: lineIn 160ms ease forwards;
-}
-
-@keyframes lineIn {
-  from { opacity: 0; transform: translateY(2px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.diff-line.delete { background: var(--diff-remove-bg); }
-.diff-line.insert { background: var(--diff-add-bg); }
-.diff-line.equal { color: var(--text-tertiary); }
-
-.diff-lno { color: var(--text-quaternary); text-align: right; min-width: 3ch; }
-.diff-mark { color: var(--text-secondary); }
-.diff-line.insert .diff-mark { color: var(--accent); }
-.diff-line.delete .diff-mark { color: var(--error); }
-.diff-line.dynamic { opacity: 0.6; }
-
-.side-by-side {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
-
-.side-col {
-  border: 1px solid var(--border-secondary);
-  border-radius: 6px;
-  overflow: auto;
-  max-height: calc(100vh - 220px);
-}
-
-.meta-table {
-  width: 100%;
-  border-collapse: collapse;
-  border: 1px solid var(--border-secondary);
-}
-.meta-table th, .meta-table td {
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--border);
-  font-size: 10px;
-}
-.meta-table th {
-  color: var(--text-tertiary);
-  text-align: left;
-  background: var(--bg-tertiary);
-}
-
-.delta-warn { color: var(--warning); font-weight: 600; }
-.delta-danger { color: var(--error); font-weight: 600; }
-
-.compare-note, .compare-warning, .compare-error {
-  padding: 8px 10px;
-  border-radius: 5px;
-  font-size: 10px;
-  margin-bottom: 10px;
-}
-.compare-note { background: var(--bg-tertiary); color: var(--text-tertiary); }
-.compare-warning { background: var(--accent-amber-bg); color: var(--accent-amber); border: 1px solid var(--accent-amber-border); }
-.compare-error { background: var(--error-bg); color: var(--error); border: 1px solid var(--error-border); }
-
-.ignore-list { display: grid; gap: 7px; }
-.ignore-item { display: flex; align-items: center; gap: 8px; font-size: 10px; color: var(--text-secondary); }
-
-.dynamic-note { color: var(--text-quaternary); margin-left: 8px; font-size: 9px; }
-
-@media (max-width: 800px) {
-  .layout {
-    grid-template-columns: 1fr;
-  }
-
-  .left-panel {
-    border-right: none;
-    border-bottom: 1px solid var(--border-secondary);
-  }
-
-  .event-list {
-    max-height: 40vh;
-  }
-
-  .stat-row {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .compare-panel {
-    width: 100%;
-    height: 50vh;
-    top: auto;
-    bottom: 0;
-    border-left: none;
-    border-top: 1px solid var(--border-secondary);
-    transform: translateY(100%);
-  }
-
-  .compare-panel.open {
-    transform: translateY(0);
-  }
-}
-
-@media (max-width: 640px) {
-  .header {
-    flex-wrap: wrap;
-    height: auto;
-    padding: 10px 14px;
-    gap: 10px;
-  }
-
-  .tunnel-section {
-    width: 100%;
-    order: 3;
-  }
-
-  .tunnel-url-wrap {
-    max-width: 100%;
-  }
-
-  .stat-row {
-    grid-template-columns: 1fr;
-  }
-}
-</style>
-</head>
-<body>
-<div class="toast" id="toast"></div>
-
-<header class="header">
-  <div class="brand">
-    <svg class="brand-icon" viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="12" r="10" stroke="#10b981" stroke-width="1.5" fill="none"/>
-      <circle cx="12" cy="12" r="6" stroke="#10b981" stroke-width="1" fill="none" opacity="0.5"/>
-      <circle cx="12" cy="12" r="2" fill="#10b981"/>
-      <line x1="12" y1="2" x2="12" y2="6" stroke="#10b981" stroke-width="1" opacity="0.3"/>
-      <line x1="12" y1="18" x2="12" y2="22" stroke="#10b981" stroke-width="1" opacity="0.3"/>
-      <line x1="2" y1="12" x2="6" y2="12" stroke="#10b981" stroke-width="1" opacity="0.3"/>
-      <line x1="18" y1="12" x2="22" y2="12" stroke="#10b981" stroke-width="1" opacity="0.3"/>
-    </svg>
-    <div>
-      <div class="brand-name">tern</div>
-      <div class="brand-ver">v0.1.0</div>
-    </div>
-  </div>
-
-  <div class="tunnel-section">
-    <span class="tunnel-label">endpoint</span>
-    <div class="tunnel-url-wrap">
-      <input id="tunnel-url" class="tunnel-url" readonly value="__TERN_TUNNEL_URL__"/>
-      <button class="copy-btn" id="copy-url">
-        <svg width="10" height="10" viewBox="0 0 11 11" fill="none"><rect x="1.5" y="3.5" width="6.5" height="6" stroke="currentColor" stroke-width="1"/><path d="M3.5 3.5V2.2a1.2 1.2 0 0 1 1.2-1.2h4.3a1.2 1.2 0 0 1 1.2 1.2v4.3a1.2 1.2 0 0 1-1.2 1.2H7.5" stroke="currentColor" stroke-width="1"/></svg>
-        copy
-      </button>
-    </div>
-  </div>
-
-  <div class="header-right">
-    <div id="event-count" class="stat-pill">0 events</div>
-    <div class="status-ind">
-      <span id="sdot" class="sdot connecting"></span>
-      <span id="slabel">connecting</span>
-    </div>
-  </div>
-</header>
-
-<div class="layout">
-  <section class="left-panel">
-    <div class="panel-top">
-      <div class="filters">
-        <button class="filter active" data-filter="all">All</button>
-        <button class="filter" data-filter="failed">Failed <span class="fail-badge" id="fbadge">0</span></button>
-        <button class="filter" data-filter="replayed">Replayed</button>
-      </div>
-      <button class="clr-btn" id="clr-btn">clear</button>
-    </div>
-    <div class="compare-hint" id="compare-hint">Tip: Cmd+Click (or Ctrl+Click) any two events to compare</div>
-
-    <div id="dlq-banner" class="dlq-banner">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1.5L12.5 12H1.5L7 1.5Z" stroke="#ef4444" stroke-width="1.2" fill="none"/><line x1="7" y1="5" x2="7" y2="8.5" stroke="#ef4444" stroke-width="1"/><circle cx="7" cy="10" r="0.7" fill="#ef4444"/></svg>
-      <span class="dlq-txt" id="dlq-txt">0 events failed</span>
-      <button class="dlq-ra" id="dlq-ra">replay all</button>
-    </div>
-
-    <div id="event-list" class="event-list">
-      <div class="empty-list">
-        <div class="empty-list-icon">
-          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="16" height="16" stroke="#6b6963" stroke-width="1"/><line x1="5" y1="7" x2="15" y2="7" stroke="#6b6963" stroke-width="1"/><line x1="5" y1="11" x2="15" y2="11" stroke="#6b6963" stroke-width="1"/><line x1="5" y1="15" x2="10" y2="15" stroke="#6b6963" stroke-width="1"/></svg>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Tern · dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0a0a0a;
+        --bg-secondary: #0f0f0f;
+        --bg-tertiary: #141414;
+        --bg-quaternary: #1a1a1a;
+        --border: rgba(255, 255, 255, 0.05);
+        --border-secondary: rgba(255, 255, 255, 0.08);
+        --border-tertiary: rgba(255, 255, 255, 0.12);
+        --text-primary: #f0ede8;
+        --text-secondary: #b0ada5;
+        --text-tertiary: #6b6963;
+        --text-quaternary: #4a4741;
+        --accent: #10b981;
+        --accent-dim: #059669;
+        --accent-bg: rgba(16, 185, 129, 0.06);
+        --accent-border: rgba(16, 185, 129, 0.2);
+        --error: #ef4444;
+        --error-bg: rgba(239, 68, 68, 0.06);
+        --error-border: rgba(239, 68, 68, 0.2);
+        --warning: #f59e0b;
+        --info: #3b82f6;
+        --info-bg: rgba(59, 130, 246, 0.06);
+        --info-border: rgba(59, 130, 246, 0.2);
+        --accent-blue: #3b82f6;
+        --accent-blue-bg: rgba(59, 130, 246, 0.08);
+        --accent-blue-border: rgba(59, 130, 246, 0.25);
+        --accent-amber: #f59e0b;
+        --accent-amber-bg: rgba(245, 158, 11, 0.09);
+        --accent-amber-border: rgba(245, 158, 11, 0.25);
+        --diff-remove-bg: rgba(239, 68, 68, 0.14);
+        --diff-add-bg: rgba(16, 185, 129, 0.16);
+        --mono: "JetBrains Mono", monospace;
+        --sans: "IBM Plex Sans", system-ui, sans-serif;
+        /* INCREASED BASE FONT SIZE */
+        --font-base: 15px;
+        --font-sm: 13px;
+        --font-xs: 12px;
+        --font-xxs: 11px;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html,
+      body {
+        height: 100%;
+        overflow: hidden;
+      }
+
+      body {
+        font-family: var(--mono);
+        background: var(--bg);
+        color: var(--text-primary);
+        font-size: var(--font-base);
+        line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background: repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 2px,
+          rgba(0, 0, 0, 0.03) 2px,
+          rgba(0, 0, 0, 0.03) 4px
+        );
+        pointer-events: none;
+        z-index: 999;
+      }
+
+      /* ── HEADER ── */
+      .header {
+        height: 52px;
+        background: var(--bg-secondary);
+        border-bottom: 1px solid var(--border-secondary);
+        display: flex;
+        align-items: center;
+        padding: 6px 18px;
+        backdrop-filter: blur(12px);
+        flex-shrink: 0;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding-right: 18px;
+        border-right: 1px solid var(--border-secondary);
+        margin-right: 18px;
+        flex-shrink: 0;
+      }
+
+      .brand-icon {
+        width: 24px;
+        height: 24px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .brand-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-primary);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      .brand-ver {
+        font-size: var(--font-xxs);
+        color: var(--text-tertiary);
+        letter-spacing: 0.05em;
+        margin-top: 2px;
+      }
+
+      .tunnel-section {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 1;
+        min-width: 0;
+      }
+      .tunnel-label {
+        font-size: var(--font-xxs);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--text-tertiary);
+        flex-shrink: 0;
+        font-weight: 500;
+      }
+
+      .tunnel-url-wrap {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-secondary);
+        padding: 5px 10px;
+        flex: 1;
+        min-width: 0;
+        max-width: 520px;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+      }
+      .tunnel-url-wrap:hover {
+        border-color: var(--border-tertiary);
+        background: var(--bg-quaternary);
+      }
+
+      .tunnel-url {
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--accent);
+        background: transparent;
+        border: none;
+        outline: none;
+        flex: 1;
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        cursor: default;
+        user-select: all;
+      }
+
+      .copy-btn {
+        font-family: var(--mono);
+        font-size: var(--font-xxs);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-tertiary);
+        background: transparent;
+        border: 1px solid var(--border-secondary);
+        padding: 3px 9px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        flex-shrink: 0;
+        border-radius: 4px;
+        font-weight: 500;
+      }
+      .copy-btn:hover,
+      .copy-btn.copied {
+        color: var(--accent);
+        border-color: var(--accent-border);
+        background: var(--accent-bg);
+      }
+
+      .header-right {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-left: auto;
+        padding-left: 18px;
+        border-left: 1px solid var(--border-secondary);
+        flex-shrink: 0;
+      }
+
+      .stat-pill {
+        font-size: var(--font-xs);
+        color: var(--text-tertiary);
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        padding: 3px 10px;
+        letter-spacing: 0.04em;
+        border-radius: 4px;
+        font-weight: 500;
+      }
+
+      .status-ind {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font-size: var(--font-xs);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text-tertiary);
+        font-weight: 500;
+      }
+
+      .sdot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--text-tertiary);
+        flex-shrink: 0;
+        position: relative;
+        transition: all 0.3s ease;
+      }
+      .sdot.live {
+        background: var(--accent);
+        box-shadow:
+          0 0 8px var(--accent),
+          inset 0 0 4px rgba(16, 185, 129, 0.4);
+      }
+      .sdot.live::after {
+        content: "";
+        position: absolute;
+        inset: -4px;
+        border-radius: 50%;
+        background: var(--accent);
+        opacity: 0.2;
+        animation: ripple 2s ease-out infinite;
+      }
+      .sdot.connecting {
+        background: var(--warning);
+        animation: blink 0.8s ease-in-out infinite;
+      }
+      .sdot.disconnected {
+        background: var(--error);
+      }
+
+      @keyframes ripple {
+        0% {
+          transform: scale(1);
+          opacity: 0.3;
+        }
+        100% {
+          transform: scale(3);
+          opacity: 0;
+        }
+      }
+      @keyframes blink {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
+
+      /* ── LAYOUT ── */
+      .layout {
+        display: grid;
+        grid-template-columns: 340px 1fr;
+        height: calc(100vh - 52px);
+        min-height: 0;
+        overflow: hidden;
+      }
+
+      /* ── LEFT PANEL ── */
+      .left-panel {
+        border-right: 1px solid var(--border-secondary);
+        display: flex;
+        flex-direction: column;
+        background: var(--bg-secondary);
+        overflow: hidden;
+        min-height: 0;
+      }
+
+      .panel-top {
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-shrink: 0;
+        gap: 8px;
+      }
+
+      .filters {
+        display: flex;
+        gap: 4px;
+      }
+
+      .filter {
+        font-family: var(--mono);
+        font-size: var(--font-xxs);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-tertiary);
+        background: transparent;
+        border: 1px solid transparent;
+        padding: 4px 10px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        border-radius: 4px;
+        font-weight: 500;
+      }
+      .filter:hover {
+        color: var(--text-secondary);
+        border-color: var(--border-tertiary);
+      }
+      .filter.active {
+        color: var(--accent);
+        border-color: var(--accent-border);
+        background: var(--accent-bg);
+      }
+
+      .fail-badge {
+        font-size: 8px;
+        font-weight: 700;
+        background: var(--error);
+        color: #fff;
+        padding: 0 4px;
+        border-radius: 2px;
+        line-height: 14px;
+        display: none;
+      }
+      .fail-badge.show {
+        display: inline;
+      }
+
+      .clr-btn {
+        font-family: var(--mono);
+        font-size: var(--font-xxs);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-tertiary);
+        background: transparent;
+        border: none;
+        cursor: pointer;
+        padding: 4px 8px;
+        transition: all 0.15s ease;
+        font-weight: 500;
+      }
+      .clr-btn:hover {
+        color: var(--error);
+      }
+
+      .dlq-banner {
+        display: none;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 14px;
+        background: var(--error-bg);
+        border-bottom: 1px solid var(--error-border);
+        flex-shrink: 0;
+      }
+      .dlq-banner.show {
+        display: flex;
+      }
+      .dlq-txt {
+        font-size: var(--font-xs);
+        color: var(--error);
+        flex: 1;
+        letter-spacing: 0.02em;
+        font-weight: 500;
+      }
+      .dlq-ra {
+        font-family: var(--mono);
+        font-size: var(--font-xxs);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--error);
+        background: transparent;
+        border: 1px solid var(--error-border);
+        padding: 2px 8px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        border-radius: 4px;
+        font-weight: 600;
+      }
+      .dlq-ra:hover {
+        background: var(--error-bg);
+      }
+
+      .event-list {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+        min-height: 0;
+      }
+      .event-list::-webkit-scrollbar {
+        width: 5px;
+      }
+      .event-list::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .event-list::-webkit-scrollbar-thumb {
+        background: var(--border-secondary);
+        border-radius: 3px;
+      }
+      .event-list::-webkit-scrollbar-thumb:hover {
+        background: var(--border-tertiary);
+      }
+
+      .empty-list {
+        padding: 40px 18px;
+        text-align: center;
+      }
+      .empty-list-icon {
+        margin: 0 auto 14px;
+        width: 40px;
+        height: 40px;
+        border: 1px solid var(--border-secondary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        background: var(--bg-tertiary);
+      }
+      .empty-list strong {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        letter-spacing: 0.04em;
+        margin-bottom: 8px;
+      }
+      .empty-list span {
+        font-size: var(--font-xs);
+        color: var(--text-tertiary);
+        line-height: 1.7;
+      }
+
+      .event-row {
+        display: block;
+        width: 100%;
+        text-align: left;
+        background: transparent;
+        border: none;
+        border-bottom: 1px solid var(--border);
+        padding: 11px 14px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        position: relative;
+      }
+      .event-row:hover {
+        background: var(--bg-tertiary);
+      }
+      .event-row.selected {
+        background: var(--bg-tertiary);
+        border-left: 3px solid var(--accent);
+        padding-left: 11px;
+      }
+      .event-row.compare-a {
+        border-left: 3px solid var(--accent-blue);
+        background: var(--accent-blue-bg);
+        padding-left: 11px;
+      }
+      .event-row.compare-b {
+        border-left: 3px solid var(--accent-amber);
+        background: var(--accent-amber-bg);
+        padding-left: 11px;
+      }
+      .event-row.failed {
+        border-left: 3px solid var(--error);
+        padding-left: 11px;
+      }
+      .event-row.failed.selected {
+        border-left-color: var(--error);
+      }
+
+      .row-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 7px;
+        margin-bottom: 6px;
+      }
+      .row-left {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        min-width: 0;
+        flex: 1;
+      }
+
+      .meth {
+        font-size: var(--font-xxs);
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        background: var(--bg-quaternary);
+        border: 1px solid var(--border-secondary);
+        color: var(--text-secondary);
+        padding: 2px 6px;
+        flex-shrink: 0;
+        border-radius: 3px;
+      }
+      .row-plat {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .rtag {
+        font-size: var(--font-xxs);
+        color: var(--info);
+        background: var(--info-bg);
+        border: 1px solid var(--info-border);
+        padding: 1px 5px;
+        flex-shrink: 0;
+        letter-spacing: 0.04em;
+        border-radius: 3px;
+        font-weight: 500;
+      }
+
+      .sbadge {
+        font-size: var(--font-xxs);
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        padding: 2px 7px;
+        flex-shrink: 0;
+        border: 1px solid transparent;
+        border-radius: 3px;
+        text-transform: uppercase;
+      }
+      .sbadge.ok {
+        color: var(--accent);
+        background: var(--accent-bg);
+        border-color: var(--accent-border);
+      }
+      .sbadge.fail {
+        color: var(--error);
+        background: var(--error-bg);
+        border-color: var(--error-border);
+      }
+      .sbadge.pend {
+        color: var(--text-tertiary);
+        background: var(--bg-quaternary);
+        border-color: var(--border-secondary);
+      }
+
+      .row-meta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: var(--font-xs);
+        color: var(--text-tertiary);
+        margin-top: 2px;
+      }
+      .row-path {
+        flex: 1;
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .row-lat {
+        flex-shrink: 0;
+        color: var(--accent);
+        font-weight: 500;
+      }
+
+      /* ── RIGHT PANEL ── */
+      .right-panel {
+        display: flex;
+        flex-direction: column;
+        background: var(--bg);
+        overflow: hidden;
+        min-height: 0;
+        position: relative;
+      }
+
+      /* subtle ambient glow */
+      .right-panel::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background: radial-gradient(
+          circle at 65% 35%,
+          rgba(16, 185, 129, 0.04),
+          transparent 55%
+        );
+        z-index: 0;
+      }
+
+      .det-header {
+        background: var(--bg-secondary);
+        border-bottom: 1px solid var(--border-secondary);
+        flex-shrink: 0;
+        position: relative;
+        z-index: 1;
+      }
+
+      .det-meta {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        padding: 12px 18px 0;
+        flex-wrap: wrap;
+      }
+      .det-id {
+        font-size: var(--font-xs);
+        color: var(--text-tertiary);
+        letter-spacing: 0.02em;
+      }
+      .det-plat {
+        font-size: var(--font-xxs);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--accent);
+        background: var(--accent-bg);
+        border: 1px solid var(--accent-border);
+        padding: 2px 8px;
+        display: none;
+        border-radius: 4px;
+        font-weight: 600;
+      }
+      .det-replay {
+        font-size: var(--font-xxs);
+        color: var(--info);
+        background: var(--info-bg);
+        border: 1px solid var(--info-border);
+        padding: 2px 7px;
+        display: none;
+        letter-spacing: 0.04em;
+        border-radius: 4px;
+        font-weight: 600;
+      }
+      .det-time {
+        font-size: var(--font-xxs);
+        color: var(--text-tertiary);
+        margin-left: auto;
+        letter-spacing: 0.02em;
+      }
+
+      .tabs {
+        display: flex;
+        padding: 0 18px;
+        margin-top: 6px;
+        border-bottom: 1px solid var(--border);
+      }
+      .tab {
+        font-family: var(--mono);
+        font-size: var(--font-xs);
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        color: var(--text-tertiary);
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid transparent;
+        padding: 8px 14px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        font-weight: 500;
+      }
+      .tab:hover {
+        color: var(--text-secondary);
+      }
+      .tab.active {
+        color: var(--accent);
+        border-bottom-color: var(--accent);
+      }
+
+      /* ── DETAIL BODY — KEY FIX: proper overflow ── */
+      .det-body {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 18px;
+        min-height: 0;
+        position: relative;
+        z-index: 1;
+      }
+      .det-body::-webkit-scrollbar {
+        width: 5px;
+      }
+      .det-body::-webkit-scrollbar-thumb {
+        background: var(--border-secondary);
+        border-radius: 3px;
+      }
+
+      .empty-det {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        gap: 14px;
+      }
+      .empty-det-icon {
+        width: 70px;
+        height: 70px;
+        border: 1px solid var(--border-secondary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        background: var(--bg-secondary);
+        border-radius: 8px;
+      }
+      .empty-det-icon::before,
+      .empty-det-icon::after {
+        content: "";
+        position: absolute;
+        background: var(--accent);
+        opacity: 0.2;
+      }
+      .empty-det-icon::before {
+        width: 1px;
+        height: 100%;
+        left: 50%;
+      }
+      .empty-det-icon::after {
+        height: 1px;
+        width: 100%;
+        top: 50%;
+      }
+      .empty-det strong {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+      .empty-det span {
+        font-size: var(--font-xs);
+        color: var(--text-tertiary);
+        line-height: 1.8;
+        max-width: 260px;
+      }
+
+      /* ── CODEBLOCK — KEY FIX: horizontal scroll ── */
+      .codeblock {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-secondary);
+        overflow: hidden;
+        border-radius: 6px;
+        margin-bottom: 14px;
+      }
+      .codeblock-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--border);
+        background: var(--bg-tertiary);
+      }
+      .code-lbl {
+        font-size: var(--font-xxs);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text-tertiary);
+        font-weight: 600;
+      }
+      .code-cp {
+        font-family: var(--mono);
+        font-size: var(--font-xxs);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-tertiary);
+        background: transparent;
+        border: 1px solid var(--border-secondary);
+        padding: 2px 8px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        border-radius: 4px;
+        font-weight: 600;
+      }
+      .code-cp:hover,
+      .code-cp.copied {
+        color: var(--accent);
+        border-color: var(--accent-border);
+        background: var(--accent-bg);
+      }
+
+      .codeblock pre {
+        margin: 0;
+        padding: 16px;
+        font-family: var(--mono);
+        font-size: 12px;
+        color: var(--text-secondary);
+        /* FIX: horizontal scroll instead of wrapping */
+        white-space: pre;
+        overflow-x: auto;
+        overflow-y: auto;
+        max-height: calc(100vh - 320px);
+        line-height: 1.8;
+      }
+      .codeblock pre::-webkit-scrollbar {
+        height: 6px;
+        width: 5px;
+      }
+      .codeblock pre::-webkit-scrollbar-thumb {
+        background: var(--border-secondary);
+        border-radius: 3px;
+      }
+
+      /* ── HEADERS TABLE ── */
+      .htable {
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-secondary);
+        border-radius: 6px;
+        overflow: hidden;
+        margin-bottom: 14px;
+      }
+      .htable tr {
+        border-bottom: 1px solid var(--border);
+      }
+      .htable tr:last-child {
+        border-bottom: none;
+      }
+      .htable tr.is-sig {
+        background: rgba(16, 185, 129, 0.03);
+      }
+      .htable td {
+        padding: 10px 14px;
+        font-family: var(--mono);
+        font-size: var(--font-sm);
+        vertical-align: top;
+      }
+      .htable td:first-child {
+        color: var(--text-tertiary);
+        width: 240px;
+        white-space: nowrap;
+        border-right: 1px solid var(--border);
+        font-weight: 500;
+      }
+      .htable td:last-child {
+        color: var(--text-secondary);
+        word-break: break-all;
+      }
+      .htable tr.is-sig td:first-child {
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .sig-tag {
+        font-size: 8px;
+        color: var(--accent);
+        background: var(--accent-bg);
+        border: 1px solid var(--accent-border);
+        padding: 0 4px;
+        margin-left: 6px;
+        vertical-align: middle;
+        border-radius: 3px;
+        font-weight: 600;
+      }
+
+      /* ── STAT ROW ── */
+      .stat-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 14px;
+      }
+      .stat-box {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-secondary);
+        padding: 14px;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+      }
+      .stat-box:hover {
+        border-color: var(--border-tertiary);
+      }
+      .stat-lbl {
+        font-size: var(--font-xxs);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text-tertiary);
+        margin-bottom: 8px;
+        font-weight: 600;
+      }
+      .stat-val {
+        font-size: 26px;
+        font-weight: 700;
+        color: var(--text-primary);
+        letter-spacing: -0.02em;
+        line-height: 1;
+      }
+      .stat-val.ok {
+        color: var(--accent);
+      }
+      .stat-val.fail {
+        color: var(--error);
+      }
+
+      /* ── VERIFY BOX ── */
+      .verify-box {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border-secondary);
+        padding: 18px;
+        border-radius: 6px;
+        margin-bottom: 14px;
+      }
+      .verify-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .verify-title::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--border-secondary);
+      }
+      .verify-body {
+        font-size: 12px;
+        color: var(--text-tertiary);
+        line-height: 1.9;
+      }
+      .verify-body code {
+        font-family: var(--mono);
+        font-size: var(--font-xs);
+        color: var(--accent);
+        background: var(--accent-bg);
+        border: 1px solid var(--accent-border);
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-weight: 500;
+      }
+
+      /* ── ACTION BAR ── */
+      .action-bar {
+        flex-shrink: 0;
+        padding: 12px 18px;
+        border-top: 1px solid var(--border-secondary);
+        background: var(--bg-secondary);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        overflow-x: auto; /* FIX: prevent truncation */
+        position: relative;
+        z-index: 1;
+      }
+      .action-bar::-webkit-scrollbar {
+        height: 3px;
+      }
+      .action-bar::-webkit-scrollbar-thumb {
+        background: var(--border-secondary);
+      }
+
+      .abtn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-family: var(--mono);
+        font-size: var(--font-xs);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        border: 1px solid var(--border-secondary);
+        background: var(--bg-tertiary);
+        color: var(--text-secondary);
+        padding: 7px 14px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        white-space: nowrap;
+        border-radius: 5px;
+        font-weight: 600;
+        flex-shrink: 0;
+      }
+      .abtn:hover:not(:disabled) {
+        border-color: var(--border-tertiary);
+        color: var(--text-primary);
+        background: var(--bg-quaternary);
+      }
+      .abtn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+      .abtn:disabled:hover {
+        border-color: var(--border-secondary);
+        color: var(--text-secondary);
+        background: var(--bg-tertiary);
+      }
+      .abtn.primary {
+        background: var(--accent-bg);
+        border-color: var(--accent-border);
+        color: var(--accent);
+      }
+      .abtn.primary:hover:not(:disabled) {
+        background: rgba(16, 185, 129, 0.12);
+        border-color: var(--accent);
+      }
+      .abtn.primary:disabled {
+        opacity: 0.5;
+      }
+      .abtn.primary:disabled:hover {
+        background: var(--accent-bg);
+        color: var(--accent);
+      }
+
+      .aspc {
+        flex: 1;
+        min-width: 8px;
+      }
+      .ameta {
+        font-family: var(--mono);
+        font-size: var(--font-xs);
+        color: var(--text-tertiary);
+        letter-spacing: 0.03em;
+        white-space: nowrap;
+      }
+
+      /* ── KBD BAR ── */
+      .kbd-bar {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 8px 18px;
+        border-top: 1px solid var(--border);
+        background: var(--bg-secondary);
+        flex-shrink: 0;
+        font-size: var(--font-xxs);
+        overflow-x: auto;
+        position: relative;
+        z-index: 1;
+      }
+      .kh {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        color: var(--text-tertiary);
+        letter-spacing: 0.04em;
+        font-weight: 500;
+        white-space: nowrap;
+      }
+      kbd {
+        font-family: var(--mono);
+        font-size: 8px;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border-secondary);
+        padding: 2px 5px;
+        color: var(--text-secondary);
+        border-radius: 3px;
+        font-weight: 600;
+      }
+
+      /* ── TOAST ── */
+      .toast {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%) translateY(6px);
+        background: var(--bg-tertiary);
+        border: 1px solid var(--accent-border);
+        color: var(--accent);
+        font-family: var(--mono);
+        font-size: var(--font-xs);
+        letter-spacing: 0.06em;
+        padding: 10px 16px;
+        opacity: 0;
+        pointer-events: none;
+        transition: all 0.2s ease;
+        z-index: 9999;
+        white-space: nowrap;
+        border-radius: 5px;
+        font-weight: 600;
+      }
+      .toast.show {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+      }
+
+      /* ── COMPARE HINT ── */
+      .compare-hint {
+        font-size: var(--font-xs);
+        color: var(--text-tertiary);
+        padding: 7px 14px;
+        border-bottom: 1px solid var(--border);
+        background: var(--bg-secondary);
+      }
+      .compare-hint.hide {
+        display: none;
+      }
+
+      /* ── COMPARE PANEL ── */
+      .compare-panel {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: min(52vw, 820px);
+        height: 100%;
+        background: var(--bg-secondary);
+        border-left: 1px solid var(--border-secondary);
+        z-index: 20;
+        transform: translateX(100%);
+        transition: transform 200ms ease-out;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .compare-panel.open {
+        transform: translateX(0);
+      }
+
+      .compare-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--border-secondary);
+        flex-shrink: 0;
+      }
+      .compare-title {
+        font-size: 12px;
+        letter-spacing: 0.04em;
+        color: var(--text-secondary);
+      }
+      .compare-actions {
+        margin-left: auto;
+        display: flex;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+
+      .icon-btn,
+      .small-btn {
+        border: 1px solid var(--border-secondary);
+        background: var(--bg-tertiary);
+        color: var(--text-secondary);
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+      }
+      .icon-btn {
+        width: 28px;
+        height: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .small-btn {
+        padding: 4px 10px;
+        font-family: var(--mono);
+        font-size: var(--font-xxs);
+      }
+      .icon-btn:hover,
+      .small-btn:hover {
+        border-color: var(--border-tertiary);
+        color: var(--text-primary);
+      }
+
+      .compare-tabs {
+        display: flex;
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+      }
+      .ctab {
+        flex: 1;
+        border: none;
+        background: transparent;
+        color: var(--text-tertiary);
+        font-family: var(--mono);
+        font-size: var(--font-xs);
+        padding: 9px 6px;
+        cursor: pointer;
+        border-bottom: 2px solid transparent;
+        transition: all 0.15s ease;
+      }
+      .ctab.active {
+        color: var(--accent);
+        border-bottom-color: var(--accent);
+      }
+
+      /* ── COMPARE BODY — KEY FIX: proper scroll ── */
+      .compare-body {
+        flex: 1;
+        min-height: 0;
+        overflow: auto;
+        padding: 12px;
+        animation: tabFade 150ms ease;
+      }
+      .compare-body::-webkit-scrollbar {
+        width: 5px;
+        height: 5px;
+      }
+      .compare-body::-webkit-scrollbar-thumb {
+        background: var(--border-secondary);
+        border-radius: 3px;
+      }
+
+      @keyframes tabFade {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      .identical-banner {
+        background: var(--accent-bg);
+        border: 1px solid var(--accent-border);
+        color: var(--accent);
+        padding: 8px 10px;
+        border-radius: 6px;
+        margin-bottom: 10px;
+        font-size: var(--font-xs);
+        display: none;
+        animation: identFade 150ms ease;
+      }
+      .identical-banner.show {
+        display: block;
+      }
+      @keyframes identFade {
+        from {
+          opacity: 0;
+          transform: scale(0.98);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      /* ── DIFF ── */
+      .diff-list {
+        border: 1px solid var(--border-secondary);
+        border-radius: 6px;
+        overflow: hidden;
+      }
+
+      .diff-line {
+        display: grid;
+        grid-template-columns: 40px 40px 20px 1fr;
+        gap: 8px;
+        padding: 3px 10px;
+        font-family: var(--mono);
+        font-size: 12px;
+        line-height: 1.6;
+        opacity: 1;
+      }
+      .diff-line.anim {
+        opacity: 0;
+        animation: lineIn 160ms ease forwards;
+      }
+      @keyframes lineIn {
+        from {
+          opacity: 0;
+          transform: translateY(2px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .diff-line.delete {
+        background: var(--diff-remove-bg);
+        border-left: 2px solid var(--error);
+      }
+      .diff-line.insert {
+        background: var(--diff-add-bg);
+        border-left: 2px solid var(--accent);
+      }
+      .diff-line.equal {
+        color: var(--text-tertiary);
+      }
+
+      .diff-lno {
+        color: var(--text-quaternary);
+        text-align: right;
+        min-width: 3ch;
+        font-size: var(--font-xs);
+      }
+      .diff-mark {
+        color: var(--text-secondary);
+      }
+      .diff-line.insert .diff-mark {
+        color: var(--accent);
+      }
+      .diff-line.delete .diff-mark {
+        color: var(--error);
+      }
+      .diff-line.dynamic {
+        opacity: 0.6;
+      }
+      .dynamic-note {
+        color: var(--text-quaternary);
+        margin-left: 8px;
+        font-size: var(--font-xxs);
+      }
+
+      /* ── SIDE BY SIDE — KEY FIX ── */
+      .side-by-side {
+        display: flex; /* FIX: flex instead of grid */
+        gap: 10px;
+        overflow-x: auto; /* FIX: horizontal scroll */
+      }
+      .side-by-side::-webkit-scrollbar {
+        height: 6px;
+      }
+      .side-by-side::-webkit-scrollbar-thumb {
+        background: var(--border-secondary);
+        border-radius: 3px;
+      }
+
+      .side-col {
+        min-width: 580px; /* FIX: fixed min-width enables proper scroll */
+        flex-shrink: 0;
+        border: 1px solid var(--border-secondary);
+        border-radius: 6px;
+        overflow: auto;
+        max-height: calc(100vh - 240px);
+      }
+      .side-col::-webkit-scrollbar {
+        width: 5px;
+        height: 5px;
+      }
+      .side-col::-webkit-scrollbar-thumb {
+        background: var(--border-secondary);
+        border-radius: 3px;
+      }
+
+      /* ── META TABLE ── */
+      .meta-table {
+        width: 100%;
+        border-collapse: collapse;
+        border: 1px solid var(--border-secondary);
+        border-radius: 6px;
+        overflow: hidden;
+      }
+      .meta-table th,
+      .meta-table td {
+        padding: 9px 12px;
+        border-bottom: 1px solid var(--border);
+        font-size: var(--font-sm);
+      }
+      .meta-table th {
+        color: var(--text-tertiary);
+        text-align: left;
+        background: var(--bg-tertiary);
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        font-size: var(--font-xxs);
+      }
+      .delta-warn {
+        color: var(--warning);
+        font-weight: 600;
+      }
+      .delta-danger {
+        color: var(--error);
+        font-weight: 600;
+      }
+
+      /* ── COMPARE NOTES ── */
+      .compare-note,
+      .compare-warning,
+      .compare-error {
+        padding: 9px 12px;
+        border-radius: 5px;
+        font-size: var(--font-sm);
+        margin-bottom: 10px;
+      }
+      .compare-note {
+        background: var(--bg-tertiary);
+        color: var(--text-tertiary);
+      }
+      .compare-warning {
+        background: var(--accent-amber-bg);
+        color: var(--accent-amber);
+        border: 1px solid var(--accent-amber-border);
+      }
+      .compare-error {
+        background: var(--error-bg);
+        color: var(--error);
+        border: 1px solid var(--error-border);
+      }
+
+      /* ── IGNORE LIST ── */
+      .ignore-list {
+        display: grid;
+        gap: 8px;
+      }
+      .ignore-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: var(--font-sm);
+        color: var(--text-secondary);
+      }
+
+      /* ── RESPONSIVE ── */
+      @media (max-width: 800px) {
+        .layout {
+          grid-template-columns: 1fr;
+        }
+        .left-panel {
+          border-right: none;
+          border-bottom: 1px solid var(--border-secondary);
+        }
+        .event-list {
+          max-height: 40vh;
+        }
+        .stat-row {
+          grid-template-columns: 1fr 1fr;
+        }
+        .compare-panel {
+          width: 100%;
+          height: 55vh;
+          top: auto;
+          bottom: 0;
+          border-left: none;
+          border-top: 1px solid var(--border-secondary);
+          transform: translateY(100%);
+        }
+        .compare-panel.open {
+          transform: translateY(0);
+        }
+      }
+
+      @media (max-width: 640px) {
+        .header {
+          flex-wrap: wrap;
+          height: auto;
+          padding: 14px;
+          gap: 10px;
+        }
+        .tunnel-section {
+          width: 100%;
+          order: 3;
+        }
+        .tunnel-url-wrap {
+          max-width: 100%;
+        }
+        .stat-row {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="toast" id="toast"></div>
+
+    <header class="header">
+      <div class="brand">
+        <div>
+          <div class="brand-name">tern</div>
         </div>
-        <strong>No events yet</strong>
-        <span>Paste the tunnel URL into your webhook provider to start receiving events</span>
       </div>
-    </div>
-  </section>
 
-  <section class="right-panel">
-    <div class="det-header" id="det-header" style="display:none">
-      <div class="det-meta">
-        <span class="det-id" id="det-id"></span>
-        <span class="det-plat" id="det-plat"></span>
-        <span class="det-replay" id="det-replay">
-          <svg width="10" height="10" viewBox="0 0 11 11" fill="none"><path d="M9.2 5.5A3.8 3.8 0 1 1 5.5 1.7V0.5l2.3 2.3-2.3 2.3V3.2A2.7 2.7 0 1 0 8.2 5.5" stroke="currentColor" stroke-width="1" fill="none" stroke-linecap="round"/></svg>
-          replay
-        </span>
-        <span class="det-time" id="det-time"></span>
-      </div>
-      <div class="tabs">
-        <button class="tab active" data-tab="payload">Payload</button>
-        <button class="tab" data-tab="headers">Headers</button>
-        <button class="tab" data-tab="response">Response</button>
-        <button class="tab" data-tab="verify">Verify</button>
-      </div>
-    </div>
-
-    <div class="det-body" id="det-body">
-      <div class="empty-det">
-        <div class="empty-det-icon">
-          <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="6" stroke="#10b981" stroke-width="1.2" fill="none"/><circle cx="16" cy="16" r="11" stroke="#10b981" stroke-width="0.6" fill="none" opacity="0.4"/><line x1="16" y1="2" x2="16" y2="30" stroke="#10b981" stroke-width="0.6" opacity="0.3"/><line x1="2" y1="16" x2="30" y2="16" stroke="#10b981" stroke-width="0.6" opacity="0.3"/></svg>
-        </div>
-        <strong>Awaiting Signal</strong>
-        <span>Select an event from the list or wait for webhooks to arrive through the tunnel</span>
-      </div>
-    </div>
-
-    <div class="action-bar">
-      <button class="abtn primary" id="replay-btn" disabled>
-        <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M9.2 5.5A3.8 3.8 0 1 1 5.5 1.7V0.5l2.3 2.3-2.3 2.3V3.2A2.7 2.7 0 1 0 8.2 5.5" stroke="currentColor" stroke-width="1" fill="none" stroke-linecap="round"/></svg>
-        Replay
-      </button>
-      <button class="abtn" id="copy-curl" disabled>
-        <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><rect x="1.5" y="3.5" width="6.5" height="6" stroke="currentColor" stroke-width="1" fill="none"/><path d="M3.5 3.5V2.2a1.2 1.2 0 0 1 1.2-1.2h4.3a1.2 1.2 0 0 1 1.2 1.2v4.3a1.2 1.2 0 0 1-1.2 1.2H7.5" stroke="currentColor" stroke-width="1" fill="none"/></svg>
-        curl
-      </button>
-      <button class="abtn" id="copy-fetch" disabled>
-        <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><rect x="1.5" y="3.5" width="6.5" height="6" stroke="currentColor" stroke-width="1" fill="none"/><path d="M3.5 3.5V2.2a1.2 1.2 0 0 1 1.2-1.2h4.3a1.2 1.2 0 0 1 1.2 1.2v4.3a1.2 1.2 0 0 1-1.2 1.2H7.5" stroke="currentColor" stroke-width="1" fill="none"/></svg>
-        fetch
-      </button>
-      <div class="aspc"></div>
-      <span class="ameta" id="ameta"></span>
-    </div>
-
-    <div class="kbd-bar">
-      <div class="kh"><kbd>↑↓</kbd> navigate</div>
-      <div class="kh"><kbd>R</kbd> replay</div>
-      <div class="kh"><kbd>C</kbd> copy url</div>
-      <div class="kh"><kbd>D</kbd> compare panel</div>
-    </div>
-
-    <aside class="compare-panel" id="compare-panel" tabindex="0" aria-label="Payload comparison panel">
-      <div class="compare-head">
-        <div class="compare-title" id="compare-title">Comparing</div>
-        <div class="compare-actions">
-          <button class="small-btn" id="compare-view-toggle">Unified</button>
-          <button class="icon-btn" id="compare-close" aria-label="Close compare panel">
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 2L10 10M10 2L2 10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>
+      <div class="tunnel-section">
+        <span class="tunnel-label">endpoint</span>
+        <div class="tunnel-url-wrap">
+          <input
+            id="tunnel-url"
+            class="tunnel-url"
+            readonly
+            value="__TERN_TUNNEL_URL__"
+          />
+          <button class="copy-btn" id="copy-url">
+            <svg width="10" height="10" viewBox="0 0 11 11" fill="none">
+              <rect
+                x="1.5"
+                y="3.5"
+                width="6.5"
+                height="6"
+                stroke="currentColor"
+                stroke-width="1"
+              />
+              <path
+                d="M3.5 3.5V2.2a1.2 1.2 0 0 1 1.2-1.2h4.3a1.2 1.2 0 0 1 1.2 1.2v4.3a1.2 1.2 0 0 1-1.2 1.2H7.5"
+                stroke="currentColor"
+                stroke-width="1"
+              />
+            </svg>
+            copy
           </button>
         </div>
       </div>
-      <div class="compare-tabs">
-        <button class="ctab active" data-ctab="body">Body Diff</button>
-        <button class="ctab" data-ctab="headers">Headers Diff</button>
-        <button class="ctab" data-ctab="meta">Metadata</button>
-        <button class="ctab" id="ignore-tab-btn" data-ctab="ignore">Ignore Fields</button>
+
+      <div class="header-right">
+        <div id="event-count" class="stat-pill">0 events</div>
+        <div class="status-ind">
+          <span id="sdot" class="sdot connecting"></span>
+          <span id="slabel">connecting</span>
+        </div>
       </div>
-      <div class="compare-body" id="compare-body"></div>
-    </aside>
-  </section>
-</div>
+    </header>
 
-<script>
-const state = {
-  events: [],
-  selectedId: null,
-  filter: 'all',
-  tab: 'payload',
-  status: { connected: false, state: 'connecting', tunnelUrl: '' },
-  ws: null,
-  compare: {
-    aId: null,
-    bId: null,
-    open: false,
-    tab: 'body',
-    view: 'unified',
-    ignorePaths: new Set(),
-    hintUsed: false
-  }
-};
+    <div class="layout">
+      <section class="left-panel">
+        <div class="panel-top">
+          <div class="filters">
+            <button class="filter active" data-filter="all">All</button>
+            <button class="filter" data-filter="failed">
+              Failed <span class="fail-badge" id="fbadge">0</span>
+            </button>
+            <button class="filter" data-filter="replayed">Replayed</button>
+          </div>
+          <button class="clr-btn" id="clr-btn">clear</button>
+        </div>
+        <div class="compare-hint" id="compare-hint">
+          Tip: Cmd+Click (or Ctrl+Click) any two events to compare
+        </div>
 
-const refs = {
-  copyBtn: document.getElementById('copy-url'),
-  tunnelInput: document.getElementById('tunnel-url'),
-  toast: document.getElementById('toast'),
-  eventList: document.getElementById('event-list'),
-  eventCount: document.getElementById('event-count'),
-  sdot: document.getElementById('sdot'),
-  slabel: document.getElementById('slabel'),
-  detailHeader: document.getElementById('det-header'),
-  detailBody: document.getElementById('det-body'),
-  detailId: document.getElementById('det-id'),
-  detailPlatform: document.getElementById('det-plat'),
-  detailReplay: document.getElementById('det-replay'),
-  detailTime: document.getElementById('det-time'),
-  replayBtn: document.getElementById('replay-btn'),
-  copyCurl: document.getElementById('copy-curl'),
-  copyFetch: document.getElementById('copy-fetch'),
-  actionMeta: document.getElementById('ameta'),
-  clearBtn: document.getElementById('clr-btn'),
-  failedBadge: document.getElementById('fbadge'),
-  dlqBanner: document.getElementById('dlq-banner'),
-  dlqText: document.getElementById('dlq-txt'),
-  dlqReplayAll: document.getElementById('dlq-ra'),
-  compareHint: document.getElementById('compare-hint'),
-  comparePanel: document.getElementById('compare-panel'),
-  compareTitle: document.getElementById('compare-title'),
-  compareViewToggle: document.getElementById('compare-view-toggle'),
-  compareClose: document.getElementById('compare-close'),
-  compareBody: document.getElementById('compare-body'),
-  ignoreTabBtn: document.getElementById('ignore-tab-btn')
-};
+        <div id="dlq-banner" class="dlq-banner">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path
+              d="M7 1.5L12.5 12H1.5L7 1.5Z"
+              stroke="#ef4444"
+              stroke-width="1.2"
+              fill="none"
+            />
+            <line
+              x1="7"
+              y1="5"
+              x2="7"
+              y2="8.5"
+              stroke="#ef4444"
+              stroke-width="1"
+            />
+            <circle cx="7" cy="10" r="0.7" fill="#ef4444" />
+          </svg>
+          <span class="dlq-txt" id="dlq-txt">0 events failed</span>
+          <button class="dlq-ra" id="dlq-ra">replay all</button>
+        </div>
 
-const dynamicHeaders = new Set(['date', 'x-request-id', 'x-correlation-id', 'cf-ray', 'cf-connecting-ip', 'x-forwarded-for']);
-const defaultDynamicBody = ['id', 'created', 'created_at', 'updated_at', 'timestamp', 'event_id', 'idempotency_key', 'request_id'];
-const maxPayload = 50 * 1024;
+        <div id="event-list" class="event-list">
+          <div class="empty-list">
+            <div class="empty-list-icon">
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <rect
+                  x="2"
+                  y="2"
+                  width="16"
+                  height="16"
+                  stroke="#6b6963"
+                  stroke-width="1"
+                />
+                <line
+                  x1="5"
+                  y1="7"
+                  x2="15"
+                  y2="7"
+                  stroke="#6b6963"
+                  stroke-width="1"
+                />
+                <line
+                  x1="5"
+                  y1="11"
+                  x2="15"
+                  y2="11"
+                  stroke="#6b6963"
+                  stroke-width="1"
+                />
+                <line
+                  x1="5"
+                  y1="15"
+                  x2="10"
+                  y2="15"
+                  stroke="#6b6963"
+                  stroke-width="1"
+                />
+              </svg>
+            </div>
+            <strong>No events yet</strong>
+            <span
+              >Paste the tunnel URL into your webhook provider to start
+              receiving events</span
+            >
+          </div>
+        </div>
+      </section>
 
-function showToast(message) {
-  refs.toast.textContent = message;
-  refs.toast.classList.add('show');
-  setTimeout(() => refs.toast.classList.remove('show'), 2000);
-}
+      <section class="right-panel">
+        <div class="det-header" id="det-header" style="display: none">
+          <div class="det-meta">
+            <span class="det-id" id="det-id"></span>
+            <span class="det-plat" id="det-plat"></span>
+            <span class="det-replay" id="det-replay">
+              <svg width="10" height="10" viewBox="0 0 11 11" fill="none">
+                <path
+                  d="M9.2 5.5A3.8 3.8 0 1 1 5.5 1.7V0.5l2.3 2.3-2.3 2.3V3.2A2.7 2.7 0 1 0 8.2 5.5"
+                  stroke="currentColor"
+                  stroke-width="1"
+                  fill="none"
+                  stroke-linecap="round"
+                />
+              </svg>
+              replay
+            </span>
+            <span class="det-time" id="det-time"></span>
+          </div>
+          <div class="tabs">
+            <button class="tab active" data-tab="payload">Payload</button>
+            <button class="tab" data-tab="headers">Headers</button>
+            <button class="tab" data-tab="response">Response</button>
+            <button class="tab" data-tab="verify">Verify</button>
+          </div>
+        </div>
 
-function escapeHtml(value) {
-  return String(value)
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;');
-}
+        <div class="det-body" id="det-body">
+          <div class="empty-det">
+            <div>
+              <svg
+                width="70"
+                height="70"
+                viewBox="0 0 32 32"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <g clip-path="url(#clip0_1178_13203)">
+                  <path
+                    d="M32 7.62012H30.47V15.2401H32V7.62012Z"
+                    fill="#10b981"
+                  />
+                  <path
+                    d="M30.47 4.57007H28.95V7.62007H30.47V4.57007Z"
+                    fill="#10b981"
+                  />
+                  <path
+                    d="M28.95 3.05005H27.43V4.57005H28.95V3.05005Z"
+                    fill="#10b981"
+                  />
+                  <path
+                    d="M27.43 9.13989H25.9V13.7099H27.43V9.13989Z"
+                    fill="#10b981"
+                  />
+                  <path
+                    d="M27.43 1.52002H24.38V3.05002H27.43V1.52002Z"
+                    fill="#10b981"
+                  />
+                  <path
+                    d="M9.14 27.4299V28.9499H10.67V27.4299H15.24V28.9499H16.76V27.4299H24.38V25.8999H25.9V18.2799H24.38V22.8499H1.52V9.13989H0V25.8999H1.52V27.4299H9.14Z"
+                    fill="#10b981"
+                  />
+                  <path
+                    d="M25.9 7.62012H24.38V9.14012H25.9V7.62012Z"
+                    fill="#10b981"
+                  />
+                  <path
+                    d="M24.38 6.09009H22.86V7.62009H24.38V6.09009Z"
+                    fill="#10b981"
+                  />
+                  <path d="M24.38 0H16.76V1.52H24.38V0Z" fill="#10b981" />
+                  <path
+                    d="M22.86 10.6599H21.33V13.7099H22.86V10.6599Z"
+                    fill="#10b981"
+                  />
+                  <path
+                    d="M22.86 4.57007H18.28V6.09007H22.86V4.57007Z"
+                    fill="#10b981"
+                  />
+                  <path
+                    d="M21.33 9.13989H18.28V10.6599H21.33V9.13989Z"
+                    fill="##10b981"
+                  />
+                  <path
+                    d="M21.33 13.71H18.28V15.24H21.33V13.71Z"
+                    fill="#10b981"
+                  />
+                  <path
+                    d="M18.28 10.6599H16.76V13.7099H18.28V10.6599Z"
+                    fill="#10b981"
+                  />
+                  <path
+                    d="M9.14 30.4699V28.95H7.62V32H18.28V28.95H16.76V30.4699H9.14Z"
+                    fill="#10b981"
+                  />
+                  <path
+                    d="M15.24 18.28H13.71V19.81H15.24V18.28Z"
+                    fill="#10b981"
+                  />
+                  <path
+                    d="M13.71 15.24H12.19V16.76H13.71V15.24Z"
+                    fill="##10b981"
+                  />
+                  <path
+                    d="M13.71 19.8101H7.62V21.3301H13.71V19.8101Z"
+                    fill="#10b981"
+                  />
+                  <path d="M9.14 15.24H7.62V16.76H9.14V15.24Z" fill="#10b981" />
+                  <path
+                    d="M7.62003 18.28H6.09003V19.81H7.62003V18.28Z"
+                    fill="#10b981"
+                  />
+                  <path
+                    d="M13.71 7.62012H1.52002V9.14012H13.71V7.62012Z"
+                    fill="#10b981"
+                  />
+                </g>
+                <defs>
+                  <clipPath id="clip0_1178_13203">
+                    <rect width="32" height="32" fill="white" />
+                  </clipPath>
+                </defs>
+              </svg>
+            </div>
+            <strong>Awaiting Signal</strong>
+            <span
+              >Select an event from the list or wait for webhooks to arrive
+              through the tunnel</span
+            >
+          </div>
+        </div>
 
-function relativeTime(iso) {
-  const sec = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 1000));
-  if (sec < 60) return `${sec}s ago`;
-  const min = Math.floor(sec / 60);
-  if (min < 60) return `${min}m ago`;
-  const hrs = Math.floor(min / 60);
-  return `${hrs}h ago`;
-}
+        <div class="action-bar">
+          <button class="abtn primary" id="replay-btn" disabled>
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+              <path
+                d="M9.2 5.5A3.8 3.8 0 1 1 5.5 1.7V0.5l2.3 2.3-2.3 2.3V3.2A2.7 2.7 0 1 0 8.2 5.5"
+                stroke="currentColor"
+                stroke-width="1"
+                fill="none"
+                stroke-linecap="round"
+              />
+            </svg>
+            Replay
+          </button>
+          <button class="abtn" id="copy-curl" disabled>
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+              <rect
+                x="1.5"
+                y="3.5"
+                width="6.5"
+                height="6"
+                stroke="currentColor"
+                stroke-width="1"
+                fill="none"
+              />
+              <path
+                d="M3.5 3.5V2.2a1.2 1.2 0 0 1 1.2-1.2h4.3a1.2 1.2 0 0 1 1.2 1.2v4.3a1.2 1.2 0 0 1-1.2 1.2H7.5"
+                stroke="currentColor"
+                stroke-width="1"
+                fill="none"
+              />
+            </svg>
+            curl
+          </button>
+          <button class="abtn" id="copy-fetch" disabled>
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+              <rect
+                x="1.5"
+                y="3.5"
+                width="6.5"
+                height="6"
+                stroke="currentColor"
+                stroke-width="1"
+                fill="none"
+              />
+              <path
+                d="M3.5 3.5V2.2a1.2 1.2 0 0 1 1.2-1.2h4.3a1.2 1.2 0 0 1 1.2 1.2v4.3a1.2 1.2 0 0 1-1.2 1.2H7.5"
+                stroke="currentColor"
+                stroke-width="1"
+                fill="none"
+              />
+            </svg>
+            fetch
+          </button>
+          <div class="aspc"></div>
+          <span class="ameta" id="ameta"></span>
+        </div>
 
-function selectedEvent() {
-  return state.events.find((event) => event.id === state.selectedId) || null;
-}
+        <div class="kbd-bar">
+          <div class="kh"><kbd>↑↓</kbd> navigate</div>
+          <div class="kh"><kbd>R</kbd> replay</div>
+          <div class="kh"><kbd>C</kbd> copy url</div>
+          <div class="kh"><kbd>D</kbd> compare panel</div>
+        </div>
 
-function getEventById(id) {
-  return state.events.find((event) => event.id === id) || null;
-}
+        <aside
+          class="compare-panel"
+          id="compare-panel"
+          tabindex="0"
+          aria-label="Payload comparison panel"
+        >
+          <div class="compare-head">
+            <div class="compare-title" id="compare-title">Comparing</div>
+            <div class="compare-actions">
+              <button class="small-btn" id="compare-view-toggle">
+                Unified
+              </button>
+              <button
+                class="icon-btn"
+                id="compare-close"
+                aria-label="Close compare panel"
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path
+                    d="M2 2L10 10M10 2L2 10"
+                    stroke="currentColor"
+                    stroke-width="1.4"
+                    stroke-linecap="round"
+                  />
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="compare-tabs">
+            <button class="ctab active" data-ctab="body">Body Diff</button>
+            <button class="ctab" data-ctab="headers">Headers Diff</button>
+            <button class="ctab" data-ctab="meta">Metadata</button>
+            <button class="ctab" id="ignore-tab-btn" data-ctab="ignore">
+              Ignore Fields
+            </button>
+          </div>
+          <div class="compare-body" id="compare-body"></div>
+        </aside>
+      </section>
+    </div>
 
-function compareEvents() {
-  return { a: getEventById(state.compare.aId), b: getEventById(state.compare.bId) };
-}
+    <script>
+      const state = {
+        events: [],
+        selectedId: null,
+        filter: "all",
+        tab: "payload",
+        status: { connected: false, state: "connecting", tunnelUrl: "" },
+        ws: null,
+        compare: {
+          aId: null,
+          bId: null,
+          open: false,
+          tab: "body",
+          view: "unified",
+          ignorePaths: new Set(),
+          hintUsed: false,
+        },
+      };
 
-function filteredEvents() {
-  if (state.filter === 'failed') return state.events.filter((event) => event.failed);
-  if (state.filter === 'replayed') return state.events.filter((event) => event.replayedFrom);
-  return state.events;
-}
+      const refs = {
+        copyBtn: document.getElementById("copy-url"),
+        tunnelInput: document.getElementById("tunnel-url"),
+        toast: document.getElementById("toast"),
+        eventList: document.getElementById("event-list"),
+        eventCount: document.getElementById("event-count"),
+        sdot: document.getElementById("sdot"),
+        slabel: document.getElementById("slabel"),
+        detailHeader: document.getElementById("det-header"),
+        detailBody: document.getElementById("det-body"),
+        detailId: document.getElementById("det-id"),
+        detailPlatform: document.getElementById("det-plat"),
+        detailReplay: document.getElementById("det-replay"),
+        detailTime: document.getElementById("det-time"),
+        replayBtn: document.getElementById("replay-btn"),
+        copyCurl: document.getElementById("copy-curl"),
+        copyFetch: document.getElementById("copy-fetch"),
+        actionMeta: document.getElementById("ameta"),
+        clearBtn: document.getElementById("clr-btn"),
+        failedBadge: document.getElementById("fbadge"),
+        dlqBanner: document.getElementById("dlq-banner"),
+        dlqText: document.getElementById("dlq-txt"),
+        dlqReplayAll: document.getElementById("dlq-ra"),
+        compareHint: document.getElementById("compare-hint"),
+        comparePanel: document.getElementById("compare-panel"),
+        compareTitle: document.getElementById("compare-title"),
+        compareViewToggle: document.getElementById("compare-view-toggle"),
+        compareClose: document.getElementById("compare-close"),
+        compareBody: document.getElementById("compare-body"),
+        ignoreTabBtn: document.getElementById("ignore-tab-btn"),
+      };
 
-function statusLabel(event) {
-  if (event.status) return String(event.status);
-  return event.failed ? 'ERR' : 'PENDING';
-}
+      const dynamicHeaders = new Set([
+        "date",
+        "x-request-id",
+        "x-correlation-id",
+        "cf-ray",
+        "cf-connecting-ip",
+        "x-forwarded-for",
+      ]);
+      const defaultDynamicBody = [
+        "id",
+        "created",
+        "created_at",
+        "updated_at",
+        "timestamp",
+        "event_id",
+        "idempotency_key",
+        "request_id",
+      ];
+      const maxPayload = 50 * 1024;
 
-function setStatus(status) {
-  state.status = { ...state.status, ...status };
-  refs.sdot.className = `sdot ${state.status.state === 'live' ? 'live' : state.status.state === 'reconnecting' ? 'disconnected' : 'connecting'}`;
-  refs.slabel.textContent = state.status.state;
-  if (state.status.tunnelUrl) refs.tunnelInput.value = state.status.tunnelUrl;
-}
+      function showToast(msg) {
+        refs.toast.textContent = msg;
+        refs.toast.classList.add("show");
+        setTimeout(() => refs.toast.classList.remove("show"), 2000);
+      }
 
-function selectPrimary(id) {
-  state.selectedId = id;
-  state.compare.aId = id;
-  state.compare.bId = null;
-  state.compare.open = false;
-  state.compare.ignorePaths.clear();
-}
+      function escapeHtml(v) {
+        return String(v)
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;");
+      }
 
-function clearComparison() {
-  state.compare.aId = null;
-  state.compare.bId = null;
-  state.compare.open = false;
-  state.compare.ignorePaths.clear();
-  refs.comparePanel.classList.remove('open');
-}
+      function relativeTime(iso) {
+        const sec = Math.max(
+          0,
+          Math.floor((Date.now() - new Date(iso).getTime()) / 1000),
+        );
+        if (sec < 60) return `${sec}s ago`;
+        const min = Math.floor(sec / 60);
+        if (min < 60) return `${min}m ago`;
+        return `${Math.floor(min / 60)}h ago`;
+      }
 
-function renderList() {
-  const events = filteredEvents();
-  refs.eventCount.textContent = `${state.events.length} event${state.events.length === 1 ? '' : 's'}`;
+      function selectedEvent() {
+        return state.events.find((e) => e.id === state.selectedId) || null;
+      }
+      function getEventById(id) {
+        return state.events.find((e) => e.id === id) || null;
+      }
+      function compareEvents() {
+        return {
+          a: getEventById(state.compare.aId),
+          b: getEventById(state.compare.bId),
+        };
+      }
 
-  const failedCount = state.events.filter((event) => event.failed).length;
-  refs.failedBadge.textContent = failedCount;
-  refs.failedBadge.classList.toggle('show', failedCount > 0);
-  refs.dlqBanner.classList.toggle('show', failedCount > 0);
-  refs.dlqText.textContent = `${failedCount} event${failedCount === 1 ? '' : 's'} failed`;
-  refs.compareHint.classList.toggle('hide', state.compare.hintUsed);
+      function filteredEvents() {
+        if (state.filter === "failed")
+          return state.events.filter((e) => e.failed);
+        if (state.filter === "replayed")
+          return state.events.filter((e) => e.replayedFrom);
+        return state.events;
+      }
 
-  if (!events.length) {
-    refs.eventList.innerHTML = `<div class="empty-list"><div class="empty-list-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="16" height="16" stroke="#6b6963" stroke-width="1"/><line x1="5" y1="7" x2="15" y2="7" stroke="#6b6963" stroke-width="1"/><line x1="5" y1="11" x2="15" y2="11" stroke="#6b6963" stroke-width="1"/><line x1="5" y1="15" x2="10" y2="15" stroke="#6b6963" stroke-width="1"/></svg></div><strong>No events</strong><span>Waiting for webhook traffic for this filter</span></div>`;
-    return;
-  }
+      function statusLabel(event) {
+        if (event.status) return String(event.status);
+        return event.failed ? "ERR" : "PENDING";
+      }
 
-  refs.eventList.innerHTML = events.map((event) => {
-    const isA = event.id === state.compare.aId;
-    const isB = event.id === state.compare.bId;
-    return `
-    <button class="event-row ${event.id === state.selectedId ? 'selected' : ''} ${event.failed ? 'failed' : ''} ${isA ? 'compare-a' : ''} ${isB ? 'compare-b' : ''}" data-id="${event.id}">
+      function setStatus(status) {
+        state.status = { ...state.status, ...status };
+        refs.sdot.className = `sdot ${state.status.state === "live" ? "live" : state.status.state === "reconnecting" ? "disconnected" : "connecting"}`;
+        refs.slabel.textContent = state.status.state;
+        if (state.status.tunnelUrl)
+          refs.tunnelInput.value = state.status.tunnelUrl;
+      }
+
+      function selectPrimary(id) {
+        state.selectedId = id;
+        state.compare.aId = id;
+        state.compare.bId = null;
+        state.compare.open = false;
+        state.compare.ignorePaths.clear();
+      }
+
+      function clearComparison() {
+        state.compare.aId = null;
+        state.compare.bId = null;
+        state.compare.open = false;
+        state.compare.ignorePaths.clear();
+        refs.comparePanel.classList.remove("open");
+      }
+
+      function renderList() {
+        const events = filteredEvents();
+        refs.eventCount.textContent = `${state.events.length} event${state.events.length === 1 ? "" : "s"}`;
+        const failedCount = state.events.filter((e) => e.failed).length;
+        refs.failedBadge.textContent = failedCount;
+        refs.failedBadge.classList.toggle("show", failedCount > 0);
+        refs.dlqBanner.classList.toggle("show", failedCount > 0);
+        refs.dlqText.textContent = `${failedCount} event${failedCount === 1 ? "" : "s"} failed`;
+        refs.compareHint.classList.toggle("hide", state.compare.hintUsed);
+
+        if (!events.length) {
+          refs.eventList.innerHTML = `<div class="empty-list"><div class="empty-list-icon"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="16" height="16" stroke="#6b6963" stroke-width="1"/><line x1="5" y1="7" x2="15" y2="7" stroke="#6b6963" stroke-width="1"/><line x1="5" y1="11" x2="15" y2="11" stroke="#6b6963" stroke-width="1"/><line x1="5" y1="15" x2="10" y2="15" stroke="#6b6963" stroke-width="1"/></svg></div><strong>No events</strong><span>Waiting for webhook traffic</span></div>`;
+          return;
+        }
+
+        refs.eventList.innerHTML = events
+          .map((event) => {
+            const isA = event.id === state.compare.aId;
+            const isB = event.id === state.compare.bId;
+            return `<button class="event-row ${event.id === state.selectedId ? "selected" : ""} ${event.failed ? "failed" : ""} ${isA ? "compare-a" : ""} ${isB ? "compare-b" : ""}" data-id="${event.id}">
       <div class="row-top">
         <div class="row-left">
           <span class="meth">${escapeHtml(event.method)}</span>
-          <span class="row-plat">${escapeHtml(event.platform || 'webhook')}</span>
-          ${event.replayedFrom ? '<span class="rtag">replayed</span>' : ''}
+          <span class="row-plat">${escapeHtml(event.platform || "webhook")}</span>
+          ${event.replayedFrom ? '<span class="rtag">replayed</span>' : ""}
         </div>
-        <span class="sbadge ${event.failed ? 'fail' : event.status ? 'ok' : 'pend'}">${statusLabel(event)}</span>
+        <span class="sbadge ${event.failed ? "fail" : event.status ? "ok" : "pend"}">${statusLabel(event)}</span>
       </div>
       <div class="row-meta">
-        <span class="row-path">${escapeHtml(event.path || '/')}</span>
+        <span class="row-path">${escapeHtml(event.path || "/")}</span>
         <span>${relativeTime(event.receivedAt)}</span>
         <span class="row-lat">${event.latency || 0}ms</span>
       </div>
     </button>`;
-  }).join('');
+          })
+          .join("");
 
-  refs.eventList.querySelectorAll('.event-row').forEach((row) => {
-    row.addEventListener('click', (ev) => {
-      const id = row.getAttribute('data-id');
-      const withModifier = ev.ctrlKey || ev.metaKey;
-      if (withModifier) {
-        if (!state.compare.aId) {
-          selectPrimary(id);
-        } else {
-          state.selectedId = id;
-          state.compare.bId = id;
-          state.compare.open = Boolean(state.compare.aId && state.compare.bId);
-          state.compare.hintUsed = true;
-        }
-      } else {
-        selectPrimary(id);
+        refs.eventList.querySelectorAll(".event-row").forEach((row) => {
+          row.addEventListener("click", (ev) => {
+            const id = row.getAttribute("data-id");
+            const mod = ev.ctrlKey || ev.metaKey;
+            if (mod) {
+              if (!state.compare.aId) {
+                selectPrimary(id);
+              } else {
+                state.selectedId = id;
+                state.compare.bId = id;
+                state.compare.open = Boolean(
+                  state.compare.aId && state.compare.bId,
+                );
+                state.compare.hintUsed = true;
+              }
+            } else {
+              selectPrimary(id);
+            }
+            render();
+          });
+        });
       }
-      render();
-    });
-  });
-}
 
-function renderDetail() {
-  const event = selectedEvent();
-  const has = Boolean(event);
-  refs.detailHeader.style.display = has ? 'block' : 'none';
-  refs.replayBtn.disabled = !has;
-  refs.copyCurl.disabled = !has;
-  refs.copyFetch.disabled = !has;
+      function renderDetail() {
+        const event = selectedEvent();
+        const has = Boolean(event);
+        refs.detailHeader.style.display = has ? "block" : "none";
+        refs.replayBtn.disabled = !has;
+        refs.copyCurl.disabled = !has;
+        refs.copyFetch.disabled = !has;
 
-  if (!event) {
-    refs.detailBody.innerHTML = `<div class="empty-det"><div class="empty-det-icon"><svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="6" stroke="#10b981" stroke-width="1.2" fill="none"/><circle cx="16" cy="16" r="11" stroke="#10b981" stroke-width="0.6" fill="none" opacity="0.4"/></svg></div><strong>Awaiting Signal</strong><span>Select an event from the list or wait for webhooks to arrive through the tunnel</span></div>`;
-    refs.actionMeta.textContent = '';
-    return;
-  }
+        if (!event) {
+          refs.detailBody.innerHTML = `<div class="empty-det"><div class="empty-det-icon"><svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="6" stroke="#10b981" stroke-width="1.2" fill="none"/><circle cx="16" cy="16" r="11" stroke="#10b981" stroke-width="0.6" fill="none" opacity="0.4"/></svg></div><strong>Awaiting Signal</strong><span>Select an event from the list or wait for webhooks to arrive through the tunnel</span></div>`;
+          refs.actionMeta.textContent = "";
+          return;
+        }
 
-  refs.detailId.textContent = event.id;
-  refs.detailTime.textContent = new Date(event.receivedAt).toLocaleString();
-  refs.detailPlatform.style.display = event.platform ? 'inline-block' : 'none';
-  refs.detailPlatform.textContent = event.platform || '';
-  refs.detailReplay.style.display = event.replayedFrom ? 'inline-flex' : 'none';
-  refs.actionMeta.textContent = `${event.method} ${event.path}`;
+        refs.detailId.textContent = event.id;
+        refs.detailTime.textContent = new Date(
+          event.receivedAt,
+        ).toLocaleString();
+        refs.detailPlatform.style.display = event.platform
+          ? "inline-block"
+          : "none";
+        refs.detailPlatform.textContent = event.platform || "";
+        refs.detailReplay.style.display = event.replayedFrom
+          ? "inline-flex"
+          : "none";
+        refs.actionMeta.textContent = `${event.method} ${event.path}`;
 
-  if (state.tab === 'payload') {
-    const payload = event.bodyParsed ? JSON.stringify(event.bodyParsed, null, 2) : (event.body || '');
-    refs.detailBody.innerHTML = `<div class="codeblock"><div class="codeblock-head"><span class="code-lbl">payload</span></div><pre>${escapeHtml(payload)}</pre></div>`;
-  } else if (state.tab === 'headers') {
-    const rows = Object.entries(event.headers || {}).map(([k, v]) => {
-      const sig = /signature|hmac|digest/i.test(k);
-      return `<tr class="${sig ? 'is-sig' : ''}"><td>${escapeHtml(k)}${sig ? '<span class="sig-tag">sig</span>' : ''}</td><td>${escapeHtml(v)}</td></tr>`;
-    }).join('');
-    refs.detailBody.innerHTML = `<table class="htable">${rows || '<tr><td>none</td><td>-</td></tr>'}</table>`;
-  } else if (state.tab === 'response') {
-    refs.detailBody.innerHTML = `<div class="stat-row"><div class="stat-box"><div class="stat-lbl">status</div><div class="stat-val ${event.failed ? 'fail' : 'ok'}">${statusLabel(event)}</div></div><div class="stat-box"><div class="stat-lbl">latency</div><div class="stat-val">${event.latency || 0}ms</div></div><div class="stat-box"><div class="stat-lbl">size</div><div class="stat-val">${(event.body || '').length}</div></div></div><div class="codeblock"><div class="codeblock-head"><span class="code-lbl">error</span></div><pre>${escapeHtml(event.error || 'none')}</pre></div>`;
-  } else {
-    refs.detailBody.innerHTML = `<div class="verify-box"><div class="verify-title">Signature Verification</div><div class="verify-body">Use provider SDK with raw body and headers. Keep your route on <code>express.raw({ type: '*/*' })</code> and verify against this exact payload.</div></div>`;
-  }
-}
+        if (state.tab === "payload") {
+          const payload = event.bodyParsed
+            ? JSON.stringify(event.bodyParsed, null, 2)
+            : event.body || "";
+          refs.detailBody.innerHTML = `<div class="codeblock"><div class="codeblock-head"><span class="code-lbl">payload</span></div><pre>${escapeHtml(payload)}</pre></div>`;
+        } else if (state.tab === "headers") {
+          const rows = Object.entries(event.headers || {})
+            .map(([k, v]) => {
+              const sig = /signature|hmac|digest/i.test(k);
+              return `<tr class="${sig ? "is-sig" : ""}"><td>${escapeHtml(k)}${sig ? '<span class="sig-tag">sig</span>' : ""}</td><td>${escapeHtml(v)}</td></tr>`;
+            })
+            .join("");
+          refs.detailBody.innerHTML = `<table class="htable">${rows || "<tr><td>none</td><td>-</td></tr>"}</table>`;
+        } else if (state.tab === "response") {
+          refs.detailBody.innerHTML = `<div class="stat-row"><div class="stat-box"><div class="stat-lbl">status</div><div class="stat-val ${event.failed ? "fail" : "ok"}">${statusLabel(event)}</div></div><div class="stat-box"><div class="stat-lbl">latency</div><div class="stat-val">${event.latency || 0}ms</div></div><div class="stat-box"><div class="stat-lbl">size</div><div class="stat-val">${(event.body || "").length}</div></div></div><div class="codeblock"><div class="codeblock-head"><span class="code-lbl">error</span></div><pre>${escapeHtml(event.error || "none")}</pre></div>`;
+        } else {
+          refs.detailBody.innerHTML = `<div class="verify-box"><div class="verify-title">Signature Verification</div><div class="verify-body">Use provider SDK with raw body and headers. Keep your route on <code>express.raw({ type: '*/*' })</code> and verify against this exact payload.</div></div>`;
+        }
+      }
 
-function detectProvider(headers = {}) {
-  const keys = new Set(Object.keys(headers).map((k) => k.toLowerCase()));
-  if (keys.has('stripe-signature')) return 'Stripe';
-  if (keys.has('x-github-event')) return 'GitHub';
-  if (keys.has('x-gitlab-event')) return 'GitLab';
-  if (keys.has('sentry-hook-resource')) return 'Sentry';
-  if (keys.has('x-twilio-signature')) return 'Twilio';
-  if (keys.has('svix-signature')) return 'Svix';
-  return 'Unknown';
-}
+      function detectProvider(headers = {}) {
+        const keys = new Set(Object.keys(headers).map((k) => k.toLowerCase()));
+        if (keys.has("stripe-signature")) return "Stripe";
+        if (keys.has("x-github-event")) return "GitHub";
+        if (keys.has("x-gitlab-event")) return "GitLab";
+        if (keys.has("sentry-hook-resource")) return "Sentry";
+        if (keys.has("x-twilio-signature")) return "Twilio";
+        if (keys.has("svix-signature")) return "Svix";
+        return "Unknown";
+      }
 
-function formatPayloadSize(body) {
-  const len = (body || '').length;
-  if (len < 1024) return `${len}b`;
-  return `${(len / 1024).toFixed(1)}kb`;
-}
+      function formatPayloadSize(body) {
+        const len = (body || "").length;
+        if (len < 1024) return `${len}b`;
+        return `${(len / 1024).toFixed(1)}kb`;
+      }
 
-function truncatePayload(value) {
-  if (value.length <= maxPayload) return { value, truncated: false };
-  return { value: value.slice(0, maxPayload), truncated: true };
-}
+      function truncatePayload(value) {
+        if (value.length <= maxPayload) return { value, truncated: false };
+        return { value: value.slice(0, maxPayload), truncated: true };
+      }
 
-function looksBinary(value) {
-  if (!value) return false;
-  if (value.includes('�')) return true;
-  // Check for actual binary — non-printable control characters
-  // excluding normal whitespace (tab, newline, carriage return)
-  return /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/.test(value);
-}
+      function looksBinary(value) {
+        if (!value) return false;
+        if (value.includes("\uFFFD")) return true;
+        return /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/.test(value);
+      }
 
-function parseJsonSafe(value) {
-  try { return { ok: true, value: JSON.parse(value) }; } catch { return { ok: false, value: null }; }
-}
+      function parseJsonSafe(value) {
+        try {
+          return { ok: true, value: JSON.parse(value) };
+        } catch {
+          return { ok: false, value: null };
+        }
+      }
 
-function collectJsonPaths(obj, base = '', out = new Set()) {
-  if (!obj || typeof obj !== 'object') return out;
-  for (const [k, v] of Object.entries(obj)) {
-    const path = base ? `${base}.${k}` : k;
-    out.add(path);
-    if (v && typeof v === 'object' && !Array.isArray(v)) collectJsonPaths(v, path, out);
-  }
-  return out;
-}
+      function collectJsonPaths(obj, base = "", out = new Set()) {
+        if (!obj || typeof obj !== "object") return out;
+        for (const [k, v] of Object.entries(obj)) {
+          const path = base ? `${base}.${k}` : k;
+          out.add(path);
+          if (v && typeof v === "object" && !Array.isArray(v))
+            collectJsonPaths(v, path, out);
+        }
+        return out;
+      }
 
-function deletePath(obj, path) {
-  const parts = path.split('.');
-  let cur = obj;
-  for (let i = 0; i < parts.length - 1; i += 1) {
-    if (!cur || typeof cur !== 'object' || !(parts[i] in cur)) return;
-    cur = cur[parts[i]];
-  }
-  if (cur && typeof cur === 'object') delete cur[parts[parts.length - 1]];
-}
+      function deletePath(obj, path) {
+        const parts = path.split(".");
+        let cur = obj;
+        for (let i = 0; i < parts.length - 1; i++) {
+          if (!cur || typeof cur !== "object" || !(parts[i] in cur)) return;
+          cur = cur[parts[i]];
+        }
+        if (cur && typeof cur === "object") delete cur[parts[parts.length - 1]];
+      }
 
-function diffLines(a, b) {
-  const aLines = a.split('\n');
-  const bLines = b.split('\n');
-  const m = aLines.length;
-  const n = bLines.length;
-  const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
-  for (let i = m - 1; i >= 0; i -= 1) {
-    for (let j = n - 1; j >= 0; j -= 1) {
-      dp[i][j] = aLines[i] === bLines[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
-    }
-  }
+      function diffLines(a, b) {
+        const aLines = a.split("\n"),
+          bLines = b.split("\n");
+        const m = aLines.length,
+          n = bLines.length;
+        const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+        for (let i = m - 1; i >= 0; i--)
+          for (let j = n - 1; j >= 0; j--)
+            dp[i][j] =
+              aLines[i] === bLines[j]
+                ? dp[i + 1][j + 1] + 1
+                : Math.max(dp[i + 1][j], dp[i][j + 1]);
+        const out = [];
+        let i = 0,
+          j = 0,
+          lineA = 1,
+          lineB = 1;
+        while (i < m && j < n) {
+          if (aLines[i] === bLines[j]) {
+            out.push({ type: "equal", value: aLines[i], lineA, lineB });
+            i++;
+            j++;
+            lineA++;
+            lineB++;
+          } else if (dp[i + 1][j] >= dp[i][j + 1]) {
+            out.push({ type: "delete", value: aLines[i], lineA });
+            i++;
+            lineA++;
+          } else {
+            out.push({ type: "insert", value: bLines[j], lineB });
+            j++;
+            lineB++;
+          }
+        }
+        while (i < m) {
+          out.push({ type: "delete", value: aLines[i], lineA });
+          i++;
+          lineA++;
+        }
+        while (j < n) {
+          out.push({ type: "insert", value: bLines[j], lineB });
+          j++;
+          lineB++;
+        }
+        return out;
+      }
 
-  const out = [];
-  let i = 0;
-  let j = 0;
-  let lineA = 1;
-  let lineB = 1;
-  while (i < m && j < n) {
-    if (aLines[i] === bLines[j]) {
-      out.push({ type: 'equal', value: aLines[i], lineA, lineB });
-      i += 1; j += 1; lineA += 1; lineB += 1;
-    } else if (dp[i + 1][j] >= dp[i][j + 1]) {
-      out.push({ type: 'delete', value: aLines[i], lineA });
-      i += 1; lineA += 1;
-    } else {
-      out.push({ type: 'insert', value: bLines[j], lineB });
-      j += 1; lineB += 1;
-    }
-  }
-  while (i < m) { out.push({ type: 'delete', value: aLines[i], lineA }); i += 1; lineA += 1; }
-  while (j < n) { out.push({ type: 'insert', value: bLines[j], lineB }); j += 1; lineB += 1; }
-  return out;
-}
+      function normalizeBodyForDiff(event, ignorePaths) {
+        const raw = event.body || "";
+        if (!raw) return { mode: "empty", text: "(empty body)" };
+        if (looksBinary(raw))
+          return { mode: "binary", text: "(binary body — cannot diff)" };
+        const { value, truncated } = truncatePayload(raw);
+        const parsed = parseJsonSafe(value);
+        if (!parsed.ok) return { mode: "text", text: value, truncated };
+        const copy = JSON.parse(JSON.stringify(parsed.value));
+        for (const path of ignorePaths) deletePath(copy, path);
+        return {
+          mode: "json",
+          text: JSON.stringify(copy, null, 2),
+          parsed: copy,
+          truncated,
+        };
+      }
 
-function normalizeBodyForDiff(event, ignorePaths) {
-  const raw = event.body || '';
-  if (!raw) return { mode: 'empty', text: '(empty body)' };
-  if (looksBinary(raw)) return { mode: 'binary', text: '(binary body — cannot diff)' };
+      function normalizeHeaders(headers = {}) {
+        return Object.entries(headers)
+          .map(([k, v]) => [k.toLowerCase(), String(v)])
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([k, v]) => `${k}: ${v}`)
+          .join("\n");
+      }
 
-  const { value, truncated } = truncatePayload(raw);
-  const parsed = parseJsonSafe(value);
-  if (!parsed.ok) return { mode: 'text', text: value, truncated };
+      function renderUnifiedDiff(lines) {
+        if (!lines.length)
+          return '<div class="compare-note">Payloads are identical</div>';
+        return `<div class="diff-list">${lines
+          .map((line, idx) => {
+            const cls = `diff-line ${line.type} ${line.dynamic ? "dynamic" : ""} ${idx < 50 ? "anim" : ""}`;
+            const delay =
+              idx < 50 ? `style="animation-delay:${idx * 5}ms"` : "";
+            const mark =
+              line.type === "delete" ? "−" : line.type === "insert" ? "+" : " ";
+            return `<div class="${cls}" ${delay}><span class="diff-lno">${line.lineA || ""}</span><span class="diff-lno">${line.lineB || ""}</span><span class="diff-mark">${mark}</span><span>${escapeHtml(line.value)}${line.dynamic ? '<span class="dynamic-note">(dynamic)</span>' : ""}</span></div>`;
+          })
+          .join("")}</div>`;
+      }
 
-  const copy = JSON.parse(JSON.stringify(parsed.value));
-  for (const path of ignorePaths) deletePath(copy, path);
-  return { mode: 'json', text: JSON.stringify(copy, null, 2), parsed: copy, truncated };
-}
+      function renderSideBySideDiff(lines) {
+        const left = lines
+          .filter((l) => l.type !== "insert")
+          .map((line, idx) => {
+            const cls = `diff-line ${line.type === "delete" ? "delete" : "equal"} ${idx < 50 ? "anim" : ""}`;
+            const delay =
+              idx < 50 ? `style="animation-delay:${idx * 5}ms"` : "";
+            return `<div class="${cls}" ${delay}><span class="diff-lno">${line.lineA || ""}</span><span class="diff-lno"></span><span class="diff-mark">${line.type === "delete" ? "−" : " "}</span><span>${escapeHtml(line.value)}</span></div>`;
+          })
+          .join("");
+        const right = lines
+          .filter((l) => l.type !== "delete")
+          .map((line, idx) => {
+            const cls = `diff-line ${line.type === "insert" ? "insert" : "equal"} ${idx < 50 ? "anim" : ""}`;
+            const delay =
+              idx < 50 ? `style="animation-delay:${idx * 5}ms"` : "";
+            return `<div class="${cls}" ${delay}><span class="diff-lno"></span><span class="diff-lno">${line.lineB || ""}</span><span class="diff-mark">${line.type === "insert" ? "+" : " "}</span><span>${escapeHtml(line.value)}</span></div>`;
+          })
+          .join("");
+        return `<div class="side-by-side"><div class="side-col" id="side-a">${left}</div><div class="side-col" id="side-b">${right}</div></div>`;
+      }
 
-function normalizeHeaders(headers = {}) {
-  return Object.entries(headers)
-    .map(([k, v]) => [k.toLowerCase(), String(v)])
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([k, v]) => `${k}: ${v}`)
-    .join('\n');
-}
+      function metadataRows(a, b) {
+        const ta = new Date(a.receivedAt).getTime(),
+          tb = new Date(b.receivedAt).getTime();
+        const fmt = (d) =>
+          new Date(d).toLocaleTimeString("en-US", { hour12: false }) +
+          `.${String(new Date(d).getMilliseconds()).padStart(3, "0")}`;
+        return [
+          ["Time", fmt(a.receivedAt), fmt(b.receivedAt)],
+          ["Δ Time", "—", formatDelta(tb - ta)],
+          ["Method", a.method, b.method],
+          ["Path", a.path || "/", b.path || "/"],
+          [
+            "Status",
+            `${statusLabel(a)} ${a.failed ? "✗" : "✓"}`,
+            `${statusLabel(b)} ${b.failed ? "✗" : "✓"}`,
+          ],
+          ["Latency", `${a.latency || 0}ms`, `${b.latency || 0}ms`],
+          [
+            "Payload Size",
+            formatPayloadSize(a.body),
+            formatPayloadSize(b.body),
+          ],
+          ["Provider", detectProvider(a.headers), detectProvider(b.headers)],
+        ];
+      }
 
-function renderUnifiedDiff(lines) {
-  if (!lines.length) return '<div class="compare-note">Payloads are identical</div>';
-  return `<div class="diff-list">${lines.map((line, idx) => {
-    const cls = `diff-line ${line.type} ${line.dynamic ? 'dynamic' : ''} ${idx < 50 ? 'anim' : ''}`;
-    const delay = idx < 50 ? `style="animation-delay:${idx * 5}ms"` : '';
-    const mark = line.type === 'delete' ? '−' : line.type === 'insert' ? '+' : ' ';
-    return `<div class="${cls}" ${delay}><span class="diff-lno">${line.lineA || ''}</span><span class="diff-lno">${line.lineB || ''}</span><span class="diff-mark">${mark}</span><span>${escapeHtml(line.value)}${line.dynamic ? '<span class="dynamic-note">(dynamic field — always changes)</span>' : ''}</span></div>`;
-  }).join('')}</div>`;
-}
+      function formatDelta(ms) {
+        const sign = ms >= 0 ? "+" : "−",
+          abs = Math.abs(ms);
+        if (abs < 1000) return `${sign}${Math.round(abs)}ms`;
+        if (abs < 60000) return `${sign}${(abs / 1000).toFixed(1)}s`;
+        return `${sign}${Math.floor(abs / 60000)}m ${Math.floor((abs % 60000) / 1000)}s`;
+      }
 
-function renderSideBySideDiff(lines) {
-  const left = lines.map((line, idx) => {
-    const show = line.type !== 'insert';
-    if (!show) return '';
-    const cls = `diff-line ${line.type === 'delete' ? 'delete' : 'equal'} ${idx < 50 ? 'anim' : ''}`;
-    const delay = idx < 50 ? `style="animation-delay:${idx * 5}ms"` : '';
-    return `<div class="${cls}" ${delay}><span class="diff-lno">${line.lineA || ''}</span><span class="diff-lno"></span><span class="diff-mark">${line.type === 'delete' ? '−' : ' '}</span><span>${escapeHtml(line.value)}</span></div>`;
-  }).join('');
-  const right = lines.map((line, idx) => {
-    const show = line.type !== 'delete';
-    if (!show) return '';
-    const cls = `diff-line ${line.type === 'insert' ? 'insert' : 'equal'} ${idx < 50 ? 'anim' : ''}`;
-    const delay = idx < 50 ? `style="animation-delay:${idx * 5}ms"` : '';
-    return `<div class="${cls}" ${delay}><span class="diff-lno"></span><span class="diff-lno">${line.lineB || ''}</span><span class="diff-mark">${line.type === 'insert' ? '+' : ' '}</span><span>${escapeHtml(line.value)}</span></div>`;
-  }).join('');
+      function deltaClass(ms) {
+        const abs = Math.abs(ms);
+        if (abs > 30000) return "delta-danger";
+        if (abs >= 5000) return "delta-warn";
+        return "";
+      }
 
-  return `<div class="side-by-side"><div class="side-col" id="side-a">${left}</div><div class="side-col" id="side-b">${right}</div></div>`;
-}
+      function compareFingerprintMeta(a, b) {
+        return JSON.stringify(metadataRows(a, b));
+      }
 
-function metadataRows(a, b) {
-  const ta = new Date(a.receivedAt).getTime();
-  const tb = new Date(b.receivedAt).getTime();
-  const deltaMs = tb - ta;
-  return [
-    ['Time', new Date(a.receivedAt).toLocaleTimeString('en-US', { hour12: false }) + `.${String(new Date(a.receivedAt).getMilliseconds()).padStart(3, '0')}`, new Date(b.receivedAt).toLocaleTimeString('en-US', { hour12: false }) + `.${String(new Date(b.receivedAt).getMilliseconds()).padStart(3, '0')}`],
-    ['Δ Time', '—', formatDelta(deltaMs)],
-    ['Method', a.method, b.method],
-    ['Path', a.path || '/', b.path || '/'],
-    ['Status', `${statusLabel(a)} ${a.failed ? '✗' : '✓'}`, `${statusLabel(b)} ${b.failed ? '✗' : '✓'}`],
-    ['Latency', `${a.latency || 0}ms`, `${b.latency || 0}ms`],
-    ['Payload Size', formatPayloadSize(a.body), formatPayloadSize(b.body)],
-    ['Provider Badge', detectProvider(a.headers), detectProvider(b.headers)]
-  ];
-}
+      function renderComparePanel() {
+        const { a, b } = compareEvents();
+        const open = Boolean(state.compare.open && a && b);
+        refs.comparePanel.classList.toggle("open", open);
+        if (!open) return;
 
-function formatDelta(ms) {
-  const sign = ms >= 0 ? '+' : '−';
-  const abs = Math.abs(ms);
-  if (abs < 1000) return `${sign}${Math.round(abs)}ms`;
-  if (abs < 60000) return `${sign}${(abs / 1000).toFixed(1)}s`;
-  const min = Math.floor(abs / 60000);
-  const sec = Math.floor((abs % 60000) / 1000);
-  return `${sign}${min}m ${sec}s`;
-}
+        const events = filteredEvents();
+        const ia = events.findIndex((e) => e.id === a.id),
+          ib = events.findIndex((e) => e.id === b.id);
+        refs.compareTitle.textContent = `Comparing #${ia + 1} ↔ #${ib + 1}`;
+        refs.compareViewToggle.style.display =
+          state.compare.tab === "body" ? "inline-block" : "none";
+        refs.compareViewToggle.textContent =
+          state.compare.view === "unified" ? "Unified" : "Side by side";
+        document
+          .querySelectorAll(".ctab")
+          .forEach((btn) =>
+            btn.classList.toggle(
+              "active",
+              btn.dataset.ctab === state.compare.tab,
+            ),
+          );
 
-function deltaClass(ms) {
-  const abs = Math.abs(ms);
-  if (abs > 30000) return 'delta-danger';
-  if (abs >= 5000) return 'delta-warn';
-  return '';
-}
+        if (a.id === b.id) {
+          refs.compareBody.innerHTML =
+            '<div class="compare-note">Select two different events to compare</div>';
+          return;
+        }
 
-function compareFingerprintMeta(a, b) {
-  return JSON.stringify(metadataRows(a, b));
-}
+        const normA = normalizeBodyForDiff(a, state.compare.ignorePaths);
+        const normB = normalizeBodyForDiff(b, state.compare.ignorePaths);
+        const parseA = parseJsonSafe(a.body || ""),
+          parseB = parseJsonSafe(b.body || "");
+        const notes = [];
+        if (normA.truncated || normB.truncated)
+          notes.push(
+            '<div class="compare-warning">Payload truncated to 50kb for comparison</div>',
+          );
+        if ((parseA.ok && !parseB.ok) || (!parseA.ok && parseB.ok))
+          notes.push(
+            '<div class="compare-warning">Content types differ — diffing as plain text</div>',
+          );
+        if (normA.mode === "binary" || normB.mode === "binary")
+          notes.push(
+            '<div class="compare-note">(binary body — cannot diff)</div>',
+          );
 
-function renderComparePanel() {
-  const { a, b } = compareEvents();
-  const open = Boolean(state.compare.open && a && b);
-  refs.comparePanel.classList.toggle('open', open);
-  if (!open) return;
+        const useJson =
+          parseA.ok &&
+          parseB.ok &&
+          normA.mode !== "binary" &&
+          normB.mode !== "binary";
+        const bodyA = useJson
+          ? normA.text
+          : normA.mode === "empty"
+            ? "(empty body)"
+            : normA.text;
+        const bodyB = useJson
+          ? normB.text
+          : normB.mode === "empty"
+            ? "(empty body)"
+            : normB.text;
+        const bodyDiff = diffLines(bodyA, bodyB);
+        const headersA = normalizeHeaders(a.headers || {}),
+          headersB = normalizeHeaders(b.headers || {});
+        const headerDiff = diffLines(headersA, headersB).map((line) => {
+          const key = line.value.split(":")[0]?.trim().toLowerCase();
+          if (dynamicHeaders.has(key)) line.dynamic = true;
+          return line;
+        });
 
-  const events = filteredEvents();
-  const ia = events.findIndex((e) => e.id === a.id);
-  const ib = events.findIndex((e) => e.id === b.id);
-  refs.compareTitle.textContent = `Comparing #${ia + 1} ↔ #${ib + 1}`;
-  refs.compareViewToggle.style.display = state.compare.tab === 'body' ? 'inline-block' : 'none';
-  refs.compareViewToggle.textContent = state.compare.view === 'unified' ? 'Unified' : 'Side by side';
+        const metaRows = metadataRows(a, b);
+        const deltaMs =
+          new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime();
+        const identical =
+          bodyA === bodyB &&
+          headersA === headersB &&
+          compareFingerprintMeta(a, b) === compareFingerprintMeta(b, a);
+        const identicalBanner = identical
+          ? '<div class="identical-banner show">✓ Events are identical (body, headers, and metadata match)</div>'
+          : "";
 
-  document.querySelectorAll('.ctab').forEach((btn) => btn.classList.toggle('active', btn.dataset.ctab === state.compare.tab));
+        if (state.compare.tab === "body") {
+          const diffMarkup =
+            state.compare.view === "unified"
+              ? renderUnifiedDiff(bodyDiff)
+              : renderSideBySideDiff(bodyDiff);
+          refs.compareBody.innerHTML = `${identicalBanner}${notes.join("")}${diffMarkup}`;
+          bindSideSync();
+        } else if (state.compare.tab === "headers") {
+          refs.compareBody.innerHTML = `${identicalBanner}${renderUnifiedDiff(headerDiff)}`;
+        } else if (state.compare.tab === "meta") {
+          refs.compareBody.innerHTML = `${identicalBanner}<table class="meta-table"><thead><tr><th>Field</th><th>Event A</th><th>Event B</th></tr></thead><tbody>${metaRows.map(([k, va, vb]) => `<tr><td>${escapeHtml(k)}</td><td>${escapeHtml(String(va))}</td><td class="${k === "Δ Time" ? deltaClass(deltaMs) : ""}">${escapeHtml(String(vb))}</td></tr>`).join("")}</tbody></table>`;
+        } else {
+          const paths = new Set();
+          if (parseA.ok) collectJsonPaths(parseA.value, "", paths);
+          if (parseB.ok) collectJsonPaths(parseB.value, "", paths);
+          const defaults = [...paths].filter((p) =>
+            defaultDynamicBody.includes(p.split(".").pop()),
+          );
+          if (!state.compare.ignorePaths.size && defaults.length)
+            defaults.forEach((p) => state.compare.ignorePaths.add(p));
+          refs.ignoreTabBtn.textContent = `Ignore Fields${state.compare.ignorePaths.size ? ` (${state.compare.ignorePaths.size})` : ""}`;
+          refs.compareBody.innerHTML = `<div class="compare-note">Toggle fields to exclude from body diff.</div><div class="ignore-list">${
+            [...paths]
+              .sort()
+              .map(
+                (path) =>
+                  `<label class="ignore-item"><input type="checkbox" data-ignore-path="${escapeHtml(path)}" ${state.compare.ignorePaths.has(path) ? "checked" : ""}/> <span>${escapeHtml(path)}</span></label>`,
+              )
+              .join("") ||
+            '<div class="compare-note">No JSON fields detected.</div>'
+          }</div>`;
+          refs.compareBody
+            .querySelectorAll("[data-ignore-path]")
+            .forEach((input) => {
+              input.addEventListener("change", () => {
+                const raw = input.getAttribute("data-ignore-path");
+                if (input.checked) state.compare.ignorePaths.add(raw);
+                else state.compare.ignorePaths.delete(raw);
+                renderComparePanel();
+              });
+            });
+        }
+      }
 
-  if (a.id === b.id) {
-    refs.compareBody.innerHTML = '<div class="compare-note">Select two different events to compare</div>';
-    return;
-  }
+      function bindSideSync() {
+        const a = document.getElementById("side-a"),
+          b = document.getElementById("side-b");
+        if (!a || !b) return;
+        let syncing = false;
+        const sync = (src, dst) => {
+          if (syncing) return;
+          syncing = true;
+          dst.scrollTop = src.scrollTop;
+          requestAnimationFrame(() => {
+            syncing = false;
+          });
+        };
+        a.addEventListener("scroll", () => sync(a, b));
+        b.addEventListener("scroll", () => sync(b, a));
+      }
 
-  const normA = normalizeBodyForDiff(a, state.compare.ignorePaths);
-  const normB = normalizeBodyForDiff(b, state.compare.ignorePaths);
-  const parseA = parseJsonSafe(a.body || '');
-  const parseB = parseJsonSafe(b.body || '');
+      function render() {
+        renderList();
+        renderDetail();
+        refs.ignoreTabBtn.textContent = `Ignore Fields${state.compare.ignorePaths.size ? ` (${state.compare.ignorePaths.size})` : ""}`;
+        renderComparePanel();
+      }
 
-  const notes = [];
-  if (normA.truncated || normB.truncated) notes.push('<div class="compare-warning">Payload truncated to 50kb for comparison</div>');
-  if ((parseA.ok && !parseB.ok) || (!parseA.ok && parseB.ok)) notes.push('<div class="compare-warning">Content types differ — diffing as plain text</div>');
-  if (normA.mode === 'binary' || normB.mode === 'binary') notes.push('<div class="compare-note">(binary body — cannot diff)</div>');
+      function upsertEvent(event) {
+        const idx = state.events.findIndex((item) => item.id === event.id);
+        if (idx === -1) {
+          state.events.unshift(event);
+          if (!state.selectedId) selectPrimary(event.id);
+        } else state.events[idx] = event;
+      }
 
-  const useJson = parseA.ok && parseB.ok && normA.mode !== 'binary' && normB.mode !== 'binary';
-  const bodyA = useJson ? normA.text : (normA.mode === 'empty' ? '(empty body)' : normA.text);
-  const bodyB = useJson ? normB.text : (normB.mode === 'empty' ? '(empty body)' : normB.text);
+      function connectWs() {
+        const protocol = location.protocol === "https:" ? "wss" : "ws";
+        state.ws = new WebSocket(
+          `${protocol}://${location.hostname}:${location.port}/ws`,
+        );
+        state.ws.addEventListener("open", () => {
+          if (!state.status.connected) setStatus({ connected: true });
+        });
+        state.ws.addEventListener("error", () =>
+          setStatus({ connected: false, state: "reconnecting" }),
+        );
+        state.ws.addEventListener("message", (message) => {
+          const data = JSON.parse(message.data);
+          if (data.type === "event" || data.type === "update") {
+            upsertEvent(data.event);
+            render();
+          } else if (data.type === "clear") {
+            state.events = [];
+            state.selectedId = null;
+            clearComparison();
+            render();
+          } else if (data.type === "status") setStatus(data);
+        });
+        state.ws.addEventListener("close", () => {
+          setStatus({ connected: false, state: "reconnecting" });
+          setTimeout(connectWs, 1500);
+        });
+      }
 
-  const bodyDiff = diffLines(bodyA, bodyB);
-  const headersA = normalizeHeaders(a.headers || {});
-  const headersB = normalizeHeaders(b.headers || {});
-  const headerDiff = diffLines(headersA, headersB).map((line) => {
-    const key = line.value.split(':')[0]?.trim().toLowerCase();
-    if (dynamicHeaders.has(key)) line.dynamic = true;
-    return line;
-  });
+      async function loadInitial() {
+        const [eventsRes, statusRes] = await Promise.all([
+          fetch("/api/events"),
+          fetch("/api/status"),
+        ]);
+        const eventsData = await eventsRes.json(),
+          statusData = await statusRes.json();
+        state.events = eventsData.events || [];
+        if (state.events[0]) selectPrimary(state.events[0].id);
+        setStatus(statusData);
+        render();
+      }
 
-  const metaRows = metadataRows(a, b);
-  const deltaMs = new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime();
+      refs.copyBtn.addEventListener("click", async () => {
+        try {
+          await navigator.clipboard.writeText(refs.tunnelInput.value);
+          refs.copyBtn.classList.add("copied");
+          showToast("URL copied to clipboard");
+          setTimeout(() => refs.copyBtn.classList.remove("copied"), 2000);
+        } catch {
+          showToast("Failed to copy");
+        }
+      });
 
-  const identical = bodyA === bodyB && headersA === headersB && compareFingerprintMeta(a, b) === compareFingerprintMeta(b, a);
-  const identicalBanner = identical ? '<div class="identical-banner show">Events are identical (body, headers, and metadata match)</div>' : '';
+      refs.clearBtn.addEventListener("click", async () => {
+        await fetch("/api/clear", { method: "POST" });
+        state.events = [];
+        state.selectedId = null;
+        clearComparison();
+        render();
+      });
 
-  if (state.compare.tab === 'body') {
-    const diffMarkup = state.compare.view === 'unified' ? renderUnifiedDiff(bodyDiff) : renderSideBySideDiff(bodyDiff);
-    refs.compareBody.innerHTML = `${identicalBanner}${notes.join('')}${diffMarkup}`;
-    bindSideSync();
-  } else if (state.compare.tab === 'headers') {
-    refs.compareBody.innerHTML = `${identicalBanner}${renderUnifiedDiff(headerDiff)}`;
-  } else if (state.compare.tab === 'meta') {
-    refs.compareBody.innerHTML = `${identicalBanner}<table class="meta-table"><thead><tr><th>Field</th><th>Event A</th><th>Event B</th></tr></thead><tbody>${metaRows.map(([k, va, vb]) => `<tr><td>${escapeHtml(k)}</td><td>${escapeHtml(String(va))}</td><td class="${k === 'Δ Time' ? deltaClass(deltaMs) : ''}">${escapeHtml(String(vb))}</td></tr>`).join('')}</tbody></table>`;
-  } else {
-    const paths = new Set();
-    if (parseA.ok) collectJsonPaths(parseA.value, '', paths);
-    if (parseB.ok) collectJsonPaths(parseB.value, '', paths);
-    const defaults = [...paths].filter((p) => defaultDynamicBody.includes(p.split('.').pop()));
-    if (!state.compare.ignorePaths.size && defaults.length) defaults.forEach((p) => state.compare.ignorePaths.add(p));
-    refs.ignoreTabBtn.textContent = `Ignore Fields${state.compare.ignorePaths.size ? ` (${state.compare.ignorePaths.size})` : ''}`;
-    refs.compareBody.innerHTML = `<div class="compare-note">Toggle fields to exclude them from body diff.</div><div class="ignore-list">${[...paths].sort().map((path) => `<label class="ignore-item"><input type="checkbox" data-ignore-path="${escapeHtml(path)}" ${state.compare.ignorePaths.has(path) ? 'checked' : ''}/> <span>${escapeHtml(path)}</span></label>`).join('') || '<div class="compare-note">No JSON fields detected in selected payloads.</div>'}</div>`;
-    refs.compareBody.querySelectorAll('[data-ignore-path]').forEach((input) => {
-      input.addEventListener('change', () => {
-        const raw = input.getAttribute('data-ignore-path');
-        if (input.checked) state.compare.ignorePaths.add(raw);
-        else state.compare.ignorePaths.delete(raw);
+      refs.replayBtn.addEventListener("click", async () => {
+        const event = selectedEvent();
+        if (!event) return;
+        await fetch("/api/replay", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ id: event.id }),
+        });
+        showToast("Event replayed");
+      });
+
+      refs.dlqReplayAll.addEventListener("click", async () => {
+        const failed = state.events.filter((e) => e.failed);
+        for (const event of failed)
+          await fetch("/api/replay", {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ id: event.id }),
+          });
+        showToast(`Replayed ${failed.length} failed events`);
+      });
+
+      refs.copyCurl.addEventListener("click", async () => {
+        const event = selectedEvent();
+        if (!event) return;
+        const headers = Object.entries(event.headers || {})
+          .map(([k, v]) => `-H '${k}: ${String(v).replaceAll("'", "'\\''")}' `)
+          .join("");
+        const body = (event.body || "").replaceAll("'", "'\\''");
+        await navigator.clipboard.writeText(
+          `curl -X ${event.method} ${headers}--data-raw '${body}' '${refs.tunnelInput.value}${event.path}'`,
+        );
+        showToast("curl command copied");
+      });
+
+      refs.copyFetch.addEventListener("click", async () => {
+        const event = selectedEvent();
+        if (!event) return;
+        await navigator.clipboard.writeText(
+          `await fetch('${refs.tunnelInput.value}${event.path}', {\n  method: '${event.method}',\n  headers: ${JSON.stringify(event.headers || {}, null, 2)},\n  body: ${JSON.stringify(event.body || "")}\n});`,
+        );
+        showToast("fetch snippet copied");
+      });
+
+      document.querySelectorAll(".filter").forEach((btn) =>
+        btn.addEventListener("click", () => {
+          document
+            .querySelectorAll(".filter")
+            .forEach((i) => i.classList.remove("active"));
+          btn.classList.add("active");
+          state.filter = btn.dataset.filter;
+          renderList();
+        }),
+      );
+
+      document.querySelectorAll(".tab").forEach((btn) =>
+        btn.addEventListener("click", () => {
+          document
+            .querySelectorAll(".tab")
+            .forEach((i) => i.classList.remove("active"));
+          btn.classList.add("active");
+          state.tab = btn.dataset.tab;
+          renderDetail();
+        }),
+      );
+
+      document.querySelectorAll(".ctab").forEach((btn) =>
+        btn.addEventListener("click", () => {
+          state.compare.tab = btn.dataset.ctab;
+          renderComparePanel();
+        }),
+      );
+
+      refs.compareClose.addEventListener("click", () => {
+        clearComparison();
+        state.selectedId = null;
+        render();
+      });
+      refs.compareViewToggle.addEventListener("click", () => {
+        state.compare.view =
+          state.compare.view === "unified" ? "side" : "unified";
         renderComparePanel();
       });
-    });
-  }
-}
 
-function bindSideSync() {
-  const a = document.getElementById('side-a');
-  const b = document.getElementById('side-b');
-  if (!a || !b) return;
-  let syncing = false;
-  const sync = (src, dst) => {
-    if (syncing) return;
-    syncing = true;
-    dst.scrollTop = src.scrollTop;
-    requestAnimationFrame(() => { syncing = false; });
-  };
-  a.addEventListener('scroll', () => sync(a, b));
-  b.addEventListener('scroll', () => sync(b, a));
-}
+      document.addEventListener("keydown", (e) => {
+        const key = e.key.toLowerCase(),
+          events = filteredEvents();
+        const currentIndex = events.findIndex(
+          (ev) => ev.id === state.selectedId,
+        );
+        if (e.key === "ArrowDown" && events.length) {
+          e.preventDefault();
+          const next =
+            events[Math.min(events.length - 1, Math.max(0, currentIndex + 1))];
+          if (next) {
+            selectPrimary(next.id);
+            render();
+          }
+        }
+        if (e.key === "ArrowUp" && events.length) {
+          e.preventDefault();
+          const prev = events[Math.max(0, currentIndex - 1)];
+          if (prev) {
+            selectPrimary(prev.id);
+            render();
+          }
+        }
+        if (key === "r" && !e.ctrlKey && !e.metaKey) refs.replayBtn.click();
+        if (key === "c" && !e.ctrlKey && !e.metaKey) refs.copyBtn.click();
+        if (key === "d" && state.compare.aId && state.compare.bId) {
+          state.compare.open = true;
+          refs.comparePanel.classList.add("open");
+          refs.comparePanel.focus();
+          renderComparePanel();
+        }
+        if (e.key === "Escape") {
+          if (state.compare.open || state.compare.aId || state.compare.bId) {
+            clearComparison();
+            state.selectedId = null;
+            render();
+            return;
+          }
+          state.selectedId = null;
+          renderDetail();
+          renderList();
+        }
+        const panelFocused =
+          state.compare.open &&
+          refs.comparePanel.contains(document.activeElement);
+        if (panelFocused && e.key === "Tab") {
+          e.preventDefault();
+          const tabs = ["body", "headers", "meta", "ignore"];
+          const idx = tabs.indexOf(state.compare.tab);
+          state.compare.tab = tabs[(idx + 1) % tabs.length];
+          renderComparePanel();
+        }
+        if (state.compare.open && ["1", "2", "3", "4"].includes(e.key)) {
+          const map = { 1: "body", 2: "headers", 3: "meta", 4: "ignore" };
+          state.compare.tab = map[e.key];
+          renderComparePanel();
+        }
+      });
 
-function render() {
-  renderList();
-  renderDetail();
-  refs.ignoreTabBtn.textContent = `Ignore Fields${state.compare.ignorePaths.size ? ` (${state.compare.ignorePaths.size})` : ''}`;
-  renderComparePanel();
-}
-
-function upsertEvent(event) {
-  const idx = state.events.findIndex((item) => item.id === event.id);
-  if (idx === -1) {
-    state.events.unshift(event);
-    if (!state.selectedId) selectPrimary(event.id);
-  } else {
-    state.events[idx] = event;
-  }
-}
-
-function connectWs() {
-  const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  state.ws = new WebSocket(`${protocol}://${location.hostname}:${location.port}/ws`);
-
-  state.ws.addEventListener('open', () => {
-    // Just mark connected, let the incoming status message set the actual state
-    if (!state.status.connected) {
-      setStatus({ connected: true });
-    }
-  });
-
-  state.ws.addEventListener('error', () => {
-    setStatus({ connected: false, state: 'reconnecting' });
-  });
-
-  state.ws.addEventListener('message', (message) => {
-    const data = JSON.parse(message.data);
-    if (data.type === 'event' || data.type === 'update') {
-      upsertEvent(data.event);
-      render();
-    } else if (data.type === 'clear') {
-      state.events = [];
-      state.selectedId = null;
-      clearComparison();
-      render();
-    } else if (data.type === 'status') {
-      setStatus(data);
-    }
-  });
-
-  state.ws.addEventListener('close', () => {
-    setStatus({ connected: false, state: 'reconnecting' });
-    setTimeout(connectWs, 1500);
-  });
-}
-
-async function loadInitial() {
-  const [eventsRes, statusRes] = await Promise.all([fetch('/api/events'), fetch('/api/status')]);
-  const eventsData = await eventsRes.json();
-  const statusData = await statusRes.json();
-  state.events = eventsData.events || [];
-  if (state.events[0]) selectPrimary(state.events[0].id);
-  setStatus(statusData);
-  render();
-}
-
-refs.copyBtn.addEventListener('click', async () => {
-  try {
-    await navigator.clipboard.writeText(refs.tunnelInput.value);
-    refs.copyBtn.classList.add('copied');
-    showToast('URL copied to clipboard');
-    setTimeout(() => refs.copyBtn.classList.remove('copied'), 2000);
-  } catch {
-    showToast('Failed to copy');
-  }
-});
-
-refs.clearBtn.addEventListener('click', async () => {
-  await fetch('/api/clear', { method: 'POST' });
-  state.events = [];
-  state.selectedId = null;
-  clearComparison();
-  render();
-});
-
-refs.replayBtn.addEventListener('click', async () => {
-  const event = selectedEvent();
-  if (!event) return;
-  await fetch('/api/replay', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: event.id }) });
-  showToast('Event replayed');
-});
-
-refs.dlqReplayAll.addEventListener('click', async () => {
-  const failed = state.events.filter((event) => event.failed);
-  for (const event of failed) {
-    await fetch('/api/replay', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id: event.id }) });
-  }
-  showToast(`Replayed ${failed.length} failed events`);
-});
-
-refs.copyCurl.addEventListener('click', async () => {
-  const event = selectedEvent();
-  if (!event) return;
-  const headers = Object.entries(event.headers || {}).map(([k, v]) => `-H '${k}: ${String(v).replaceAll("'", "'\''")}'`).join(' ');
-  const body = (event.body || '').replaceAll("'", "'\''");
-  const cmd = `curl -X ${event.method} ${headers} --data-raw '${body}' '${refs.tunnelInput.value}${event.path}'`;
-  await navigator.clipboard.writeText(cmd);
-  showToast('curl command copied');
-});
-
-refs.copyFetch.addEventListener('click', async () => {
-  const event = selectedEvent();
-  if (!event) return;
-  const snippet = `await fetch('${refs.tunnelInput.value}${event.path}', {
-  method: '${event.method}',
-  headers: ${JSON.stringify(event.headers || {}, null, 2)},
-  body: ${JSON.stringify(event.body || '')}
-});`;
-  await navigator.clipboard.writeText(snippet);
-  showToast('fetch snippet copied');
-});
-
-document.querySelectorAll('.filter').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.filter').forEach((item) => item.classList.remove('active'));
-    btn.classList.add('active');
-    state.filter = btn.dataset.filter;
-    renderList();
-  });
-});
-
-document.querySelectorAll('.tab').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach((item) => item.classList.remove('active'));
-    btn.classList.add('active');
-    state.tab = btn.dataset.tab;
-    renderDetail();
-  });
-});
-
-document.querySelectorAll('.ctab').forEach((btn) => {
-  btn.addEventListener('click', () => {
-    state.compare.tab = btn.dataset.ctab;
-    renderComparePanel();
-  });
-});
-
-refs.compareClose.addEventListener('click', () => {
-  clearComparison();
-  state.selectedId = null;
-  render();
-});
-
-refs.compareViewToggle.addEventListener('click', () => {
-  state.compare.view = state.compare.view === 'unified' ? 'side' : 'unified';
-  renderComparePanel();
-});
-
-document.addEventListener('keydown', (e) => {
-  const key = e.key.toLowerCase();
-  const events = filteredEvents();
-  const currentIndex = events.findIndex((ev) => ev.id === state.selectedId);
-
-  if (e.key === 'ArrowDown' && events.length) {
-    e.preventDefault();
-    const next = events[Math.min(events.length - 1, Math.max(0, currentIndex + 1))];
-    if (next) { selectPrimary(next.id); render(); }
-  }
-
-  if (e.key === 'ArrowUp' && events.length) {
-    e.preventDefault();
-    const prev = events[Math.max(0, currentIndex - 1)];
-    if (prev) { selectPrimary(prev.id); render(); }
-  }
-
-  if (key === 'r' && !e.ctrlKey && !e.metaKey) refs.replayBtn.click();
-  if (key === 'c' && !e.ctrlKey && !e.metaKey) refs.copyBtn.click();
-
-  if (key === 'd' && state.compare.aId && state.compare.bId) {
-    state.compare.open = true;
-    refs.comparePanel.classList.add('open');
-    refs.comparePanel.focus();
-    renderComparePanel();
-  }
-
-  if (e.key === 'Escape') {
-    if (state.compare.open || state.compare.aId || state.compare.bId) {
-      clearComparison();
-      state.selectedId = null;
-      render();
-      return;
-    }
-    state.selectedId = null;
-    renderDetail();
-    renderList();
-  }
-
-  const panelFocused = state.compare.open && refs.comparePanel.contains(document.activeElement);
-  if (panelFocused && e.key === 'Tab') {
-    e.preventDefault();
-    const tabs = ['body', 'headers', 'meta', 'ignore'];
-    const idx = tabs.indexOf(state.compare.tab);
-    state.compare.tab = tabs[(idx + 1) % tabs.length];
-    renderComparePanel();
-  }
-
-  if (state.compare.open && ['1', '2', '3', '4'].includes(e.key)) {
-    const map = { '1': 'body', '2': 'headers', '3': 'meta', '4': 'ignore' };
-    state.compare.tab = map[e.key];
-    renderComparePanel();
-  }
-});
-
-loadInitial().then(connectWs).catch(() => showToast('Failed to load dashboard data'));
-</script>
-</body>
+      loadInitial()
+        .then(connectWs)
+        .catch(() => showToast("Failed to load dashboard data"));
+    </script>
+  </body>
 </html>
