@@ -30,6 +30,7 @@ export class RelayClient extends EventEmitter {
     });
 
     this.socket.on("message", (data) => {
+      if (Buffer.byteLength(data as Buffer | string | ArrayBuffer) > 10_000_000) return;
       try {
         const parsed = JSON.parse(data.toString()) as RelayConnectedMessage | RelayMessage;
         if (parsed.type === "connected") {

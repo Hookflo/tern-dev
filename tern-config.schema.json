@@ -32,7 +32,7 @@
     "relay": {
       "type": "string",
       "description": "Relay WebSocket URL used to establish the tunnel.",
-      "default": "wss://relay.tern.hookflo.com"
+      "default": "wss://tern-relay.hookflo-tern.workers.dev"
     },
     "maxEvents": {
       "type": "integer",

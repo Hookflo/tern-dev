@@ -4,7 +4,7 @@ import minimist from "minimist";
 import { resolveConfig, TernConfig, validateConfig } from "./config";
 import { EventStore } from "./event-store";
 import { forward, setLocalTlsCredentials } from "./forwarder";
-import { error, info, printBanner, printSafetyBanner, warn } from "./logger";
+import { error, info, printBanner, printHelp, printLogo, printSafetyBanner, success, warn } from "./logger";
 import { RelayClient } from "./relay-client";
 import { RelayConnectedMessage, RelayMessage, StatusPayload } from "./types";
 import { UiServer } from "./ui-server";
@@ -14,9 +14,46 @@ interface PackageMeta {
   version?: string;
 }
 
-function parseCliArgs(): Partial<TernConfig> {
+interface ParsedCliArgs extends Partial<TernConfig> {
+  showHelp?: boolean;
+  showVersion?: boolean;
+  forwardTarget?: string;
+}
+
+function parseForward(value: string): { port: number; path: string; forwardTarget: string } | null {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const withoutProtocol = trimmed.replace(/^https?:\/\//i, "");
+  const hostSeparator = withoutProtocol.lastIndexOf(":");
+  if (hostSeparator < 0) {
+    return null;
+  }
+
+  const afterColon = withoutProtocol.slice(hostSeparator + 1);
+  const slashIndex = afterColon.indexOf("/");
+  const portText = slashIndex >= 0 ? afterColon.slice(0, slashIndex) : afterColon;
+  const parsedPort = Number(portText);
+
+  if (!Number.isInteger(parsedPort) || parsedPort < 1 || parsedPort > 65535) {
+    return null;
+  }
+
+  const rawPath = slashIndex >= 0 ? afterColon.slice(slashIndex) : "/";
+  const normalizedPath = rawPath.startsWith("/") ? rawPath : `/${rawPath}`;
+
+  return {
+    port: parsedPort,
+    path: normalizedPath,
+    forwardTarget: `localhost:${parsedPort}${normalizedPath === "/" ? "" : normalizedPath}`,
+  };
+}
+
+function parseCliArgs(): ParsedCliArgs {
   const args = minimist(process.argv.slice(2), {
-    boolean: ["no-ui"],
+    boolean: ["no-ui", "help", "version"],
     string: [
       "relay",
       "path",
@@ -27,7 +64,12 @@ function parseCliArgs(): Partial<TernConfig> {
       "log",
       "local-cert",
       "local-key",
+      "forward",
     ],
+    alias: {
+      h: "help",
+      v: "version",
+    },
   });
 
   const parseList = (value: unknown): string[] | undefined => {
@@ -62,7 +104,9 @@ function parseCliArgs(): Partial<TernConfig> {
     return Number.isFinite(parsed) ? parsed : Number.NaN;
   };
 
-  const parsed: Partial<TernConfig> = {
+  const parsed: ParsedCliArgs = {
+    showHelp: Boolean(args.help),
+    showVersion: Boolean(args.version),
     port: toNumber(args.port),
     path: typeof args.path === "string" ? args.path : undefined,
     uiPort: toNumber(args["ui-port"]),
@@ -81,6 +125,18 @@ function parseCliArgs(): Partial<TernConfig> {
     localCert: typeof args["local-cert"] === "string" ? args["local-cert"] : undefined,
     localKey: typeof args["local-key"] === "string" ? args["local-key"] : undefined,
   };
+
+  const forwardValue = typeof args.forward === "string" ? args.forward : undefined;
+  if (forwardValue) {
+    const parsedForward = parseForward(forwardValue);
+    if (!parsedForward) {
+      error("invalid --forward value. expected localhost:3000/api/webhooks");
+      process.exit(1);
+    }
+    parsed.port = parsedForward.port;
+    parsed.path = parsedForward.path;
+    parsed.forwardTarget = parsedForward.forwardTarget;
+  }
 
   if (!parsed.block?.paths && !parsed.block?.methods && !parsed.block?.headers) {
     delete parsed.block;
@@ -121,17 +177,30 @@ function appendAuditLog(config: TernConfig, event: { method: string; path: strin
   fs.appendFile(config.log, line, (err) => {
     if (err) {
       const message = err instanceof Error ? err.message : String(err);
-      console.log(`[tern] warning: audit log write failed — ${message}`);
+      warn(`audit log write failed — ${message}`);
     }
   });
 }
 
 async function main(): Promise<void> {
+  const version = loadVersion();
   const cliArgs = parseCliArgs();
+
+  if (cliArgs.showVersion) {
+    process.stdout.write(`@hookflo/tern-dev v${version}\n`);
+    return;
+  }
+
+  if (cliArgs.showHelp) {
+    printLogo(version);
+    process.stdout.write("\n");
+    printHelp(version);
+    return;
+  }
+
   const config = resolveConfig(cliArgs);
   validateConfig(config);
 
-  const version = loadVersion();
   if (config.localCert && config.localKey) {
     const cert = fs.readFileSync(config.localCert);
     const key = fs.readFileSync(config.localKey);
@@ -169,7 +238,7 @@ async function main(): Promise<void> {
 
   const shutdown = (message?: string) => {
     if (message) {
-      console.log(message);
+      warn(message);
     }
     clearTimers();
     relayClient.close();
@@ -177,6 +246,8 @@ async function main(): Promise<void> {
     uiServer?.close();
     process.exit(0);
   };
+
+  printLogo(version);
 
   relayClient.on("connected", (payload: RelayConnectedMessage) => {
     const tunnelChanged =
@@ -190,12 +261,14 @@ async function main(): Promise<void> {
 
     if (tunnelChanged) {
       warn(
-        "Tunnel URL changed after reconnect — update your webhook endpoint.",
+        "Tunnel URL changed after reconnect — update your webhook endpoint",
       );
     }
 
-    printBanner(payload.url, config.port ?? 0, config.uiPort ?? 2019, Boolean(config.noUi));
+    const forwardTarget = cliArgs.forwardTarget ?? `localhost:${config.port ?? 0}${config.path && config.path !== "/" ? config.path : ""}`;
+    printBanner(payload.url, forwardTarget, config.uiPort ?? 2019, Boolean(config.noUi));
     printSafetyBanner(config.ttl);
+    success("connected ✓");
 
     if (config.ttl !== undefined) {
       clearTimers();
@@ -205,18 +278,18 @@ async function main(): Promise<void> {
 
       if (ttlMs > fiveMinMs) {
         ttlWarningFive = setTimeout(() => {
-          console.log("[tern] ⚠ session expires in 5 minutes");
+          warn("session expires in 5 minutes");
         }, ttlMs - fiveMinMs);
       }
 
       if (ttlMs > oneMinMs) {
         ttlWarningOne = setTimeout(() => {
-          console.log("[tern] ⚠ session expires in 1 minute");
+          warn("session expires in 1 minute");
         }, ttlMs - oneMinMs);
       }
 
       sessionExpiryTimer = setTimeout(() => {
-        console.log(`[tern] session expired after ${config.ttl} minutes — shutting down`);
+        warn(`session expired after ${config.ttl} minutes — shutting down`);
         shutdown();
       }, ttlMs);
     }
@@ -224,9 +297,7 @@ async function main(): Promise<void> {
 
   relayClient.on("reconnecting", ({ attempt, delayMs }) => {
     setStatus({ connected: false, state: "reconnecting" });
-    warn(
-      `Relay disconnected. Reconnecting in ${delayMs}ms (attempt ${attempt}).`,
-    );
+    warn(`reconnecting... (attempt ${attempt}, ${Math.max(1, Math.round(delayMs / 1000))}s)`);
   });
 
   relayClient.on("disconnect", () => {
@@ -272,17 +343,15 @@ async function main(): Promise<void> {
     const httpServer = uiServer.start(config.uiPort ?? 2019);
     wsServer.attach(httpServer, "/ws");
     wsServer.setStatus(status);
-    info(`Dashboard listening on http://localhost:${config.uiPort ?? 2019}`);
   }
 
   process.on("SIGINT", () => {
-    shutdown("\n[tern] session ended — tunnel closed, all event data cleared");
+    shutdown("session ended · all event data cleared");
   });
 
-  process.on("SIGTERM", () => shutdown());
+  process.on("SIGTERM", () => shutdown("session ended · all event data cleared"));
 
   relayClient.connect(config.relay ?? "wss://tern-relay.hookflo-tern.workers.dev");
-
 }
 
 main().catch((err: unknown) => {

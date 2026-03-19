@@ -52,7 +52,7 @@
 
 html, body {
   height: 100%;
-  overflow: hidden;
+  overflow: auto;
 }
 
 body {
@@ -299,6 +299,7 @@ body::before {
   display: grid;
   grid-template-columns: 320px 1fr;
   height: calc(100vh - 48px);
+  min-height: 0;
   gap: 0;
 }
 
@@ -635,6 +636,7 @@ body::before {
   flex-direction: column;
   background: var(--bg);
   overflow: hidden;
+  min-height: 0;
 }
 
 .det-header {
@@ -1245,6 +1247,7 @@ kbd {
 
 .compare-body {
   flex: 1;
+  min-height: 0;
   overflow: auto;
   padding: 12px;
   animation: tabFade 150ms ease;
@@ -1660,13 +1663,9 @@ function statusLabel(event) {
 }
 
 function setStatus(status) {
-  console.log('[setStatus] Input:', status);
   state.status = { ...state.status, ...status };
-  console.log('[setStatus] Updated state.status:', state.status);
   refs.sdot.className = `sdot ${state.status.state === 'live' ? 'live' : state.status.state === 'reconnecting' ? 'disconnected' : 'connecting'}`;
-  console.log('[setStatus] Class set to:', refs.sdot.className);
   refs.slabel.textContent = state.status.state;
-  console.log('[setStatus] Label set to:', state.status.state);
   if (state.status.tunnelUrl) refs.tunnelInput.value = state.status.tunnelUrl;
 }
 
@@ -2070,10 +2069,8 @@ function connectWs() {
   state.ws = new WebSocket(`${protocol}://${location.hostname}:${location.port}/ws`);
 
   state.ws.addEventListener('open', () => {
-    console.log('[connectWs] OPEN event, current state:', state.status);
     // Just mark connected, let the incoming status message set the actual state
     if (!state.status.connected) {
-      console.log('[connectWs] Setting connected:true');
       setStatus({ connected: true });
     }
   });
@@ -2084,7 +2081,6 @@ function connectWs() {
 
   state.ws.addEventListener('message', (message) => {
     const data = JSON.parse(message.data);
-    console.log('[WS MESSAGE]', data);
     if (data.type === 'event' || data.type === 'update') {
       upsertEvent(data.event);
       render();
@@ -2094,7 +2090,6 @@ function connectWs() {
       clearComparison();
       render();
     } else if (data.type === 'status') {
-      console.log('[STATUS UPDATE]', data.state);
       setStatus(data);
     }
   });
@@ -2106,15 +2101,12 @@ function connectWs() {
 }
 
 async function loadInitial() {
-  console.log('[loadInitial] Starting...');
   const [eventsRes, statusRes] = await Promise.all([fetch('/api/events'), fetch('/api/status')]);
   const eventsData = await eventsRes.json();
   const statusData = await statusRes.json();
-  console.log('[loadInitial] Status from API:', statusData);
   state.events = eventsData.events || [];
   if (state.events[0]) selectPrimary(state.events[0].id);
   setStatus(statusData);
-  console.log('[loadInitial] setStatus called, state.status is now:', state.status);
   render();
 }
 
