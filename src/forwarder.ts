@@ -170,14 +170,25 @@ function buildBlockedEvent(
   };
 }
 
+function resolveTargetPath(configPath: string | undefined, requestPath: string): string {
+  const basePath = (configPath && configPath.trim()) || "/";
+  const normalizedBase = basePath.startsWith("/") ? basePath : `/${basePath}`;
+  const normalizedRequest = requestPath.startsWith("/") ? requestPath : `/${requestPath}`;
+
+  if (normalizedRequest === "/") {
+    return normalizedBase;
+  }
+
+  return `${normalizedBase.replace(/\/+$/g, "")}${normalizedRequest}`.replace(/\/\/{2,}/g, "/");
+}
+
 function sendLocalRequest(
   request: RelayMessage,
   config: TernConfig,
   headers: Record<string, string>,
 ): Promise<{ status: number; statusText: string }> {
   return new Promise((resolve, reject) => {
-    const targetPath = `${config.path ?? "/"}${request.path.startsWith("/") ? request.path : `/${request.path}`}`
-      .replace(/\/\/{2,}/g, "/");
+    const targetPath = resolveTargetPath(config.path, request.path);
 
     const options: https.RequestOptions = {
       hostname: "127.0.0.1",
