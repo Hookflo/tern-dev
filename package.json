@@ -1,6 +1,6 @@
 {
   "name": "@hookflo/tern-dev",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Local webhook tunnel and inspector. Zero storage.",
   "license": "MIT",
   "author": "Hookflo <hello@hookflo.com>",
