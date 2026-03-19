@@ -33,7 +33,7 @@ const DEFAULT_CONFIG: Required<Pick<TernConfig, "path" | "uiPort" | "noUi" | "re
   path: "/",
   uiPort: 2019,
   noUi: false,
-  relay: process.env.RELAY_URL ?? "wss://relay.tern.hookflo.com",
+  relay: process.env.RELAY_URL ?? "wss://tern-relay.hookflo-tern.workers.dev",
   maxEvents: 500,
 };
 
@@ -123,6 +123,10 @@ export function validateConfig(config: TernConfig): void {
 
   if (config.ttl !== undefined && config.ttl < 1) {
     errors.push("--ttl must be at least 1 minute");
+  }
+
+  if (config.maxEvents !== undefined && (!Number.isInteger(config.maxEvents) || config.maxEvents < 1)) {
+    errors.push("--max-events must be at least 1");
   }
 
   if (config.rateLimit !== undefined && config.rateLimit < 1) {

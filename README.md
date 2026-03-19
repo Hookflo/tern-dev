@@ -34,7 +34,7 @@ tern-dev opens a WebSocket to the relay server and receives a public tunnel URL.
 | `--path` | `/` | Path prefix on local server |
 | `--ui-port` | `2019` | Dashboard port |
 | `--no-ui` | false | Disable dashboard |
-| `--relay` | `wss://relay.tern.hookflo.com` | Custom relay URL (for self-hosting) |
+| `--relay` | `wss://tern-relay.hookflo-tern.workers.dev` | Custom relay URL (for self-hosting) |
 | `--max-events` | `500` | Events kept in memory |
 | `--ttl` | unset | Auto-kill session after N minutes |
 | `--rate-limit` | unset | Max incoming requests/min; excess returns 429 |
@@ -65,7 +65,7 @@ Example `tern.config.json`:
   "path": "/webhooks",
   "uiPort": 2019,
   "noUi": false,
-  "relay": "wss://relay.tern.hookflo.com",
+  "relay": "wss://tern-relay.hookflo-tern.workers.dev",
   "maxEvents": 500,
   "ttl": 60,
   "rateLimit": 100,
