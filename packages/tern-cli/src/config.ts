@@ -1,7 +1,5 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import * as clack from "@clack/prompts";
-import { CYAN, RESET } from "./colors";
 
 /** Writes tern.config.json using current wizard selections. */
 export function createConfig(
@@ -45,5 +43,4 @@ export function createConfig(
 `;
 
   fs.writeFileSync(configPath, config, "utf8");
-  clack.log.success(`created ${CYAN}tern.config.json${RESET}`);
 }
