@@ -1,27 +1,16 @@
-/** ANSI brand colors for CLI output. */
-export const colors = {
-  green: "\x1b[38;2;16;185;129m",
-  pink: "\x1b[38;2;236;72;153m",
-  cyan: "\x1b[38;2;6;182;212m",
-  yellow: "\x1b[38;2;245;158;11m",
-  gray: "\x1b[38;2;107;105;99m",
-  white: "\x1b[38;2;240;237;232m",
-  red: "\x1b[38;2;239;68;68m",
-  reset: "\x1b[0m",
-  bold: "\x1b[1m",
-} as const;
-
-/** Wraps text in ANSI color codes. */
-export function colorize(text: string, color: string): string {
-  return `${color}${text}${colors.reset}`;
-}
-
-/** Styles path/url values in cyan. */
-export function cyan(text: string): string {
-  return colorize(text, colors.cyan);
-}
-
-/** Styles env var values in yellow. */
-export function yellow(text: string): string {
-  return colorize(text, colors.yellow);
-}
+/** ANSI green used for success states and logo. */
+export const GREEN = "\x1b[38;2;16;185;129m";
+/** ANSI cyan used for URLs and file paths. */
+export const CYAN = "\x1b[38;2;6;182;212m";
+/** ANSI yellow used for env variables. */
+export const YELLOW = "\x1b[38;2;245;158;11m";
+/** ANSI gray used for muted labels. */
+export const GRAY = "\x1b[38;2;107;105;99m";
+/** ANSI white used for primary text. */
+export const WHITE = "\x1b[38;2;240;237;232m";
+/** ANSI red used for errors. */
+export const RED = "\x1b[38;2;239;68;68m";
+/** ANSI reset sequence. */
+export const RESET = "\x1b[0m";
+/** ANSI bold sequence. */
+export const BOLD = "\x1b[1m";

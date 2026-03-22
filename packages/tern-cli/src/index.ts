@@ -1,70 +1,63 @@
 #!/usr/bin/env node
 import * as clack from "@clack/prompts";
-import { openBrowser } from "./browser";
-import { ensureConfig } from "./config";
-import { yellow, colorize, colors } from "./colors";
-import { generateHandlerFiles } from "./files";
-import { envVarForPlatform } from "./templates";
-import { startSession } from "./tunnel";
-import { runWizard } from "./wizard";
+import { GRAY, RESET } from "./colors";
+import { createConfig } from "./config";
+import { createHandlerFile, getFilePath, getWebhookPath } from "./files";
+import { installTern } from "./install";
+import { printEnvBox, printLogo } from "./print";
+import { getTemplate } from "./templates";
+import { startTunnel } from "./tunnel";
+import { askQuestions, ENV_VARS, getPlatformLabel } from "./wizard";
 
-function printLogo(): void {
-  const pink = colors.pink;
-  const gray = colors.gray;
-  const reset = colors.reset;
-  process.stdout.write(`${pink}  ████████╗███████╗██████╗ ███╗  ██╗\n`);
-  process.stdout.write(`     ██║   ██╔════╝██╔══██╗████╗ ██║\n`);
-  process.stdout.write(`     ██║   █████╗  ██████╔╝██╔██╗██║\n`);
-  process.stdout.write(`     ██║   ██╔══╝  ██╔══██╗██║╚████║\n`);
-  process.stdout.write(`     ██║   ███████╗██║  ██║██║ ╚███║\n`);
-  process.stdout.write(`     ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚══╝${reset}\n`);
-  process.stdout.write(`${gray}  v0.1.0 · webhook toolkit${reset}\n\n`);
-}
-
-/** Entrypoint for the tern interactive setup CLI. */
+/** CLI entrypoint for @hookflo/tern-cli. */
 export async function main(): Promise<void> {
-  process.on("SIGINT", () => {
-    clack.outro("session ended · all event data cleared");
-    process.exit(0);
-  });
-
   printLogo();
-  clack.intro(" tern · webhook toolkit ");
 
-  const answers = await runWizard();
+  const { platform, framework, action, port } = await askQuestions();
 
-  if (answers.action !== "tunnel") {
-    await generateHandlerFiles(answers.framework, answers.platform);
-    const envVar = envVarForPlatform(answers.platform);
-    if (envVar) {
-      clack.note(`${yellow(envVar)}=`, "add to .env.local");
-    }
-  }
-
-  if (answers.action === "handler") {
-    clack.outro("ready");
+  if (action === "handler") {
+    await installTern();
+    const filePath = getFilePath(framework, platform);
+    const envVar = ENV_VARS[platform];
+    const content = getTemplate(
+      framework,
+      platform,
+      envVar,
+      getPlatformLabel(platform),
+    );
+    await createHandlerFile(filePath, content);
+    if (envVar) printEnvBox(envVar);
+    clack.outro("handler ready · add the env variable above to get started");
     return;
   }
 
-  const port = answers.port ?? "3000";
-  const { webhookPath } = ensureConfig({
-    framework: answers.framework,
-    platform: answers.platform,
-    port: Number(port),
-  });
+  if (action === "tunnel") {
+    const webhookPath = getWebhookPath(platform);
+    createConfig(port, webhookPath, platform, framework);
+    clack.log.step("connecting...");
+    startTunnel(port, webhookPath, getPlatformLabel(platform));
+    return;
+  }
 
-  await startSession({
-    port,
-    webhookPath,
-    platform: answers.platform,
-  });
-
-  clack.log.info(`opening dashboard · ${colorize("localhost:2019", colors.cyan)}`);
-  openBrowser("http://localhost:2019");
+  await installTern();
+  const filePath = getFilePath(framework, platform);
+  const webhookPath = getWebhookPath(platform);
+  const envVar = ENV_VARS[platform];
+  const content = getTemplate(
+    framework,
+    platform,
+    envVar ?? "",
+    getPlatformLabel(platform),
+  );
+  await createHandlerFile(filePath, content);
+  createConfig(port, webhookPath, platform, framework);
+  if (envVar) printEnvBox(envVar);
+  clack.log.step("connecting...");
+  startTunnel(port, webhookPath, getPlatformLabel(platform));
 }
 
-main().catch((error: unknown) => {
-  const message = error instanceof Error ? error.message : String(error);
-  clack.log.error(message);
+main().catch((err: unknown) => {
+  const message = err instanceof Error ? err.message : String(err);
+  console.error(`\n  ${GRAY}error: ${message}${RESET}\n`);
   process.exit(1);
 });
