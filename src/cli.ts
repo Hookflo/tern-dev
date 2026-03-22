@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import fs from "node:fs";
+import net from "node:net";
 import minimist from "minimist";
 import { resolveConfig, TernConfig, validateConfig } from "./config";
 import { EventStore } from "./event-store";
@@ -182,6 +183,23 @@ function appendAuditLog(config: TernConfig, event: { method: string; path: strin
   });
 }
 
+function findAvailablePort(startPort: number, maxAttempts = 10): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer();
+    server.listen(startPort, "127.0.0.1", () => {
+      const addr = server.address() as net.AddressInfo;
+      server.close(() => resolve(addr.port));
+    });
+    server.on("error", () => {
+      if (maxAttempts <= 1) {
+        reject(new Error(`no available port found starting from ${startPort}`));
+      } else {
+        findAvailablePort(startPort + 1, maxAttempts - 1).then(resolve).catch(reject);
+      }
+    });
+  });
+}
+
 async function main(): Promise<void> {
   const version = loadVersion();
   const cliArgs = parseCliArgs();
@@ -210,6 +228,7 @@ async function main(): Promise<void> {
   const eventStore = new EventStore(config.maxEvents ?? 500);
   const relayClient = new RelayClient();
   const wsServer = new WsServer();
+  const uiPort = config.noUi ? null : await findAvailablePort(config.uiPort ?? 2019);
 
   let status: StatusPayload = {
     connected: false,
@@ -266,7 +285,7 @@ async function main(): Promise<void> {
     }
 
     const forwardTarget = cliArgs.forwardTarget ?? `localhost:${config.port ?? 0}${config.path && config.path !== "/" ? config.path : ""}`;
-    printBanner(payload.url, forwardTarget, config.uiPort ?? 2019, Boolean(config.noUi));
+    printBanner(payload.url, forwardTarget, uiPort ?? (config.uiPort ?? 2019), Boolean(config.noUi));
     printSafetyBanner(config.ttl);
     success("connected ✓");
 
@@ -340,9 +359,10 @@ async function main(): Promise<void> {
       version,
     });
 
-    const httpServer = uiServer.start(config.uiPort ?? 2019);
+    const httpServer = uiServer.start(uiPort ?? (config.uiPort ?? 2019));
     wsServer.attach(httpServer, "/ws");
     wsServer.setStatus(status);
+    info(`Dashboard listening on http://localhost:${uiPort ?? (config.uiPort ?? 2019)}`);
   }
 
   process.on("SIGINT", () => {

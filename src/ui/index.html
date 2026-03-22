@@ -1945,6 +1945,8 @@
         selectedId: null,
         filter: "all",
         tab: "payload",
+        framework: null,
+        platform: null,
         status: {
           connected: false,
           state: "connecting",
@@ -2155,6 +2157,91 @@
         });
       }
 
+      function getVerifySnippet(platform, framework) {
+        if (!platform || platform === "other") return null;
+
+        const envVars = {
+          stripe: "STRIPE_WEBHOOK_SECRET",
+          github: "GITHUB_WEBHOOK_SECRET",
+          clerk: "CLERK_WEBHOOK_SECRET",
+          shopify: "SHOPIFY_WEBHOOK_SECRET",
+          dodo: "DODO_WEBHOOK_SECRET",
+          dodopayments: "DODOPAYMENTS_WEBHOOK_SECRET",
+          paddle: "PADDLE_WEBHOOK_SECRET",
+          lemonsqueezy: "LEMONSQUEEZY_WEBHOOK_SECRET",
+          polar: "POLAR_WEBHOOK_SECRET",
+          workos: "WORKOS_WEBHOOK_SECRET",
+          gitlab: "GITLAB_WEBHOOK_SECRET",
+          sentry: "SENTRY_CLIENT_SECRET",
+          razorpay: "RAZORPAY_WEBHOOK_SECRET",
+        };
+
+        const env = envVars[platform];
+        if (!env) return null;
+
+        const fw = framework || "nextjs";
+        const snippets = {
+          nextjs: `import { createWebhookHandler } from '@hookflo/tern/nextjs'
+
+export const POST = createWebhookHandler({
+  platform: '${platform}',
+  secret: process.env.${env}!,
+  handler: async (payload, metadata) => {
+    // handle ${platform} webhook
+    return { received: true }
+  },
+})`,
+
+          express: `import express from 'express'
+import { createWebhookMiddleware } from '@hookflo/tern/express'
+
+const router = express.Router()
+
+router.post(
+  '/api/webhooks/${platform}',
+  express.raw({ type: '*/*' }),
+  createWebhookMiddleware({
+    platform: '${platform}',
+    secret: process.env.${env}!,
+  }),
+  (req, res) => {
+    const event = req.webhook?.payload
+    // handle ${platform} webhook
+    res.json({ received: true })
+  },
+)`,
+
+          hono: `import { Hono } from 'hono'
+import { createWebhookHandler } from '@hookflo/tern/hono'
+
+const app = new Hono()
+
+app.post('/api/webhooks/${platform}',
+  createWebhookHandler({
+    platform: '${platform}',
+    secret: process.env.${env}!,
+    handler: async (payload, metadata, c) => {
+      // handle ${platform} webhook
+      return c.json({ received: true })
+    },
+  })
+)`,
+
+          cloudflare: `import { createWebhookHandler } from '@hookflo/tern/cloudflare'
+
+export const onRequestPost = createWebhookHandler({
+  platform: '${platform}',
+  secretEnv: '${env}',
+  handler: async (payload) => {
+    // handle ${platform} webhook
+    return { received: true }
+  },
+})`,
+        };
+
+        return snippets[fw] || snippets.nextjs;
+      }
+
       function renderDetail() {
         const event = selectedEvent();
         const has = Boolean(event);
@@ -2198,7 +2285,44 @@
         } else if (state.tab === "response") {
           refs.detailBody.innerHTML = `<div class="stat-row"><div class="stat-box"><div class="stat-lbl">status</div><div class="stat-val ${event.failed ? "fail" : "ok"}">${statusLabel(event)}</div></div><div class="stat-box"><div class="stat-lbl">latency</div><div class="stat-val">${event.latency || 0}ms</div></div><div class="stat-box"><div class="stat-lbl">size</div><div class="stat-val">${(event.body || "").length}</div></div></div><div class="codeblock"><div class="codeblock-head"><span class="code-lbl">error</span></div><pre>${escapeHtml(event.error || "none")}</pre></div>`;
         } else {
-          refs.detailBody.innerHTML = `<div class="verify-box"><div class="verify-title">Signature Verification</div><div class="verify-body">Use provider SDK with raw body and headers. Keep your route on <code>express.raw({ type: '*/*' })</code> and verify against this exact payload.</div></div>`;
+          const detectedPlatform = detectProvider(event.headers) || state.platform;
+          const fw = state.framework;
+          const snippet = getVerifySnippet(detectedPlatform, fw);
+          const platformLabel = detectedPlatform
+            ? detectedPlatform.charAt(0).toUpperCase() +
+              detectedPlatform.slice(1)
+            : null;
+          const frameworkLabel = {
+            nextjs: "Next.js",
+            express: "Express",
+            hono: "Hono",
+            cloudflare: "Cloudflare Workers",
+          }[fw] || fw || "";
+
+          if (snippet) {
+            refs.detailBody.innerHTML = `<div class="codeblock"><div class="codeblock-head"><span class="code-lbl">${escapeHtml(platformLabel)} · ${escapeHtml(frameworkLabel)}</span><button class="code-cp" id="copy-snippet">copy</button></div><pre id="verify-snippet">${escapeHtml(snippet)}</pre></div><div class="verify-box"><div class="verify-body">Install: <code>npm install @hookflo/tern</code> · raw body is handled automatically by the adapter</div></div>`;
+
+            document
+              .getElementById("copy-snippet")
+              ?.addEventListener("click", async () => {
+                try {
+                  await navigator.clipboard.writeText(snippet);
+                  const btn = document.getElementById("copy-snippet");
+                  if (btn) {
+                    btn.textContent = "copied";
+                    btn.classList.add("copied");
+                    setTimeout(() => {
+                      btn.textContent = "copy";
+                      btn.classList.remove("copied");
+                    }, 2000);
+                  }
+                } catch {
+                  // silent fail
+                }
+              });
+          } else {
+            refs.detailBody.innerHTML = `<div class="verify-box"><div class="verify-title">Signature Verification</div><div class="verify-body">Use provider SDK with raw body and headers. Keep your route on <code>express.raw({ type: '*/*' })</code> and verify against this exact payload.</div></div>`;
+          }
         }
       }
 
@@ -2662,6 +2786,8 @@
         state.events = eventsData.events || [];
         if (state.events[0]) selectPrimary(state.events[0].id);
         setStatus(statusData);
+        state.framework = statusData.framework || "nextjs";
+        state.platform = statusData.platform || null;
         render();
       }
 

@@ -17,18 +17,28 @@ export function startTunnel(
   );
 
   let urlFound = false;
+  let dashboardPort: string | null = null;
 
   child.stdout?.on("data", (data: Buffer) => {
     const lines = data.toString().split("\n");
     for (const line of lines) {
+      const dashMatch = line.match(/localhost:(\d+)/);
+      if (dashMatch && !dashboardPort) {
+        dashboardPort = dashMatch[1];
+        openBrowser(`http://localhost:${dashboardPort}`);
+      }
+
       const match = line.match(/https:\/\/[^\s]+\/s\/[a-zA-Z0-9_-]+/);
       if (match && !urlFound) {
         urlFound = true;
         const url = match[0];
         const copied = copyToClipboard(url);
         printUrlBox(platformLabel, url, copied);
-        console.log(`  opening webhook debugger · ${CYAN}localhost:2019${RESET}\n`);
-        openBrowser("http://localhost:2019");
+        const dashboardUrl = `localhost:${dashboardPort ?? "2019"}`;
+        console.log(`  opening webhook debugger · ${CYAN}${dashboardUrl}${RESET}\n`);
+        if (!dashboardPort) {
+          openBrowser("http://localhost:2019");
+        }
         console.log(`  ${GREEN}●${RESET} listening for events`);
         console.log(`  ${GRAY}Ctrl+C to stop · auto-ends in 60 min${RESET}\n`);
       }
