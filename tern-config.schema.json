@@ -103,6 +103,16 @@
       "type": "string",
       "description": "TLS key path for relay-to-localhost forwarding leg.",
       "default": ""
+    },
+    "framework": {
+      "type": "string",
+      "description": "Framework identifier used by dashboard snippets.",
+      "default": "nextjs"
+    },
+    "platform": {
+      "type": "string",
+      "description": "Platform identifier used by dashboard snippets.",
+      "default": "stripe"
     }
   }
 }
