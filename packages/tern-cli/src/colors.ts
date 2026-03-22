@@ -4,8 +4,10 @@ export const GREEN = "\x1b[38;2;16;185;129m";
 export const CYAN = "\x1b[38;2;6;182;212m";
 /** ANSI yellow used for env variables. */
 export const YELLOW = "\x1b[38;2;245;158;11m";
-/** ANSI gray used for muted labels. */
-export const GRAY = "\x1b[38;2;107;105;99m";
+/** ANSI gray used for dark borders. */
+export const GRAY = "\x1b[38;2;55;55;55m";
+/** ANSI muted used for labels and secondary information. */
+export const MUTED = "\x1b[38;2;75;75;75m";
 /** ANSI white used for primary text. */
 export const WHITE = "\x1b[38;2;240;237;232m";
 /** ANSI red used for errors. */

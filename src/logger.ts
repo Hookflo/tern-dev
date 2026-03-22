@@ -1,75 +1,66 @@
-const ANSI = {
-  reset: "\x1b[0m",
-  bold: "\x1b[1m",
-  green: "\x1b[38;2;16;185;129m",
-  cyan: "\x1b[36m",
-  red: "\x1b[38;2;239;68;68m",
-  yellow: "\x1b[38;2;245;158;11m",
-  gray: "\x1b[38;2;107;105;99m",
-  white: "\x1b[38;2;240;237;232m",
-} as const;
+export const GREEN = "\x1b[38;2;16;185;129m";
+export const CYAN = "\x1b[38;2;6;182;212m";
+export const YELLOW = "\x1b[38;2;245;158;11m";
+export const GRAY = "\x1b[38;2;55;55;55m";
+export const MUTED = "\x1b[38;2;75;75;75m";
+export const WHITE = "\x1b[38;2;240;237;232m";
+export const RED = "\x1b[38;2;239;68;68m";
+export const RESET = "\x1b[0m";
+export const BOLD = "\x1b[1m";
 
-const PREFIX = `${ANSI.gray}tern ›${ANSI.reset}`;
+const LABEL_WIDTH = 16;
 
-function withColor(color: string, value: string): string {
-  return `${color}${value}${ANSI.reset}`;
+export function printDivider(): void {
+  console.log(`  ${GREEN}${"─".repeat(42)}${RESET}`);
+  console.log();
 }
 
-function formatLabel(label: string): string {
-  return `${ANSI.gray}${label}${ANSI.reset} ${ANSI.gray}→${ANSI.reset}`;
+export function printPipe(): void {
+  console.log(`  ${GREEN}│${RESET}`);
 }
 
-function formatRequestLine(message: string): string {
-  const match = message.match(/^(\S+)\s+(\S+)\s+→\s+(\S+)\s+(\d+ms)$/);
-  if (!match) {
-    return `${ANSI.white}${message}${ANSI.reset}`;
-  }
-
-  const [, method, path, status, latency] = match;
-  const statusCode = Number(status);
-  let statusColor: string = ANSI.red;
-  if (Number.isFinite(statusCode)) {
-    if (statusCode >= 200 && statusCode < 300) statusColor = ANSI.green;
-    else if (statusCode >= 400 && statusCode < 500) statusColor = ANSI.yellow;
-  }
-
-  return `${ANSI.cyan}${method}${ANSI.reset} ${ANSI.white}${path}${ANSI.reset} ${ANSI.gray}→${ANSI.reset} ${statusColor}${status}${ANSI.reset} ${ANSI.gray}${latency}${ANSI.reset}`;
+export function printRow(
+  icon: string,
+  label: string,
+  value: string,
+  valueColor: string = WHITE,
+): void {
+  console.log(
+    `  ${GREEN}${icon}${RESET}  ` +
+      `${MUTED}${label.padEnd(LABEL_WIDTH)}${RESET}` +
+      `${valueColor}${value}${RESET}`,
+  );
 }
 
 export function info(message: string): void {
-  process.stdout.write(`${PREFIX} ${formatRequestLine(message)}\n`);
+  console.log(`  ${GRAY}tern ›  ${RESET}${WHITE}${message}${RESET}`);
 }
 
 export function success(message: string): void {
-  process.stdout.write(
-    `${withColor(ANSI.green, PREFIX)} ${withColor(ANSI.green, message)}\n`,
-  );
+  console.log(`  ${GREEN}tern ›  ${RESET}${GREEN}${message}${RESET}`);
 }
 
 export function warn(message: string): void {
-  process.stdout.write(`${PREFIX} ${withColor(ANSI.gray, message)}\n`);
+  console.log(`  ${MUTED}tern › ${message}${RESET}`);
 }
 
 export function error(message: string): void {
-  process.stderr.write(
-    `${withColor(ANSI.red, `${PREFIX} error:`)} ${withColor(ANSI.red, message)}\n`,
-  );
+  console.error(`  ${RED}tern › error  ${message}${RESET}`);
 }
 
 export function printLogo(version: string): void {
-  const logo = [
-    "  ████████╗███████╗██████╗ ███╗  ██╗",
-    "     ██║   ██╔════╝██╔══██╗████╗ ██║",
-    "     ██║   █████╗  ██████╔╝██╔██╗██║",
-    "     ██║   ██╔══╝  ██╔══██╗██║╚████║",
-    "     ██║   ███████╗██║  ██║██║ ╚███║",
-    "     ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚══╝",
-  ];
-
-  process.stdout.write(`\n${withColor(ANSI.green, logo.join("\n"))}\n`);
-  process.stdout.write(
-    `${ANSI.gray}  v${version} · open source webhook tunnel${ANSI.reset}\n`,
-  );
+  console.log();
+  console.log();
+  console.log(`  ${GREEN}████████╗███████╗██████╗ ███╗  ██╗${RESET}`);
+  console.log(`  ${GREEN}   ██║   ██╔════╝██╔══██╗████╗ ██║${RESET}`);
+  console.log(`  ${GREEN}   ██║   █████╗  ██████╔╝██╔██╗██║${RESET}`);
+  console.log(`  ${GREEN}   ██║   ██╔══╝  ██╔══██╗██║╚████║${RESET}`);
+  console.log(`  ${GREEN}   ██║   ███████╗██║  ██║██║ ╚███║${RESET}`);
+  console.log(`  ${GREEN}   ╚═╝   ╚══════╝╚═╝  ╚═╝╚═╝  ╚══╝${RESET}`);
+  console.log();
+  console.log(`  ${MUTED}v${version}  ·  open source webhook tunnel${RESET}`);
+  console.log();
+  console.log();
 }
 
 export function printBanner(
@@ -78,34 +69,56 @@ export function printBanner(
   uiPort: number,
   noUi: boolean,
 ): void {
-  process.stdout.write("\n");
-  process.stdout.write(
-    `  ${formatLabel("tunnel")}     ${withColor(ANSI.green, tunnelUrl)}\n`,
-  );
-  if (!noUi) {
-    process.stdout.write(
-      `  ${formatLabel("dashboard")}  ${withColor(ANSI.cyan, `http://localhost:${uiPort}`)}\n`,
-    );
-  }
-  process.stdout.write(
-    `  ${formatLabel("forwarding")} ${withColor(ANSI.white, forwardTarget)}\n`,
-  );
-  process.stdout.write("\n");
-  process.stdout.write(
-    `  ${ANSI.gray}Ctrl+C to end session · use --ttl 60 to auto-kill${ANSI.reset}\n\n`,
-  );
+  console.log();
+  printDivider();
+  printPipe();
+  printRow("│", "tunnel", tunnelUrl, CYAN);
+  if (!noUi) printRow("│", "dashboard", `http://localhost:${uiPort}`, CYAN);
+  printRow("│", "forwarding", forwardTarget, WHITE);
+  printPipe();
+  printDivider();
+  console.log();
+}
+
+export function printConnected(): void {
+  console.log(`  ${GREEN}└${RESET}  ${GREEN}● connected ✓${RESET}`);
+  console.log();
+}
+
+export function printReconnecting(attempt: number, delay: number): void {
+  console.log(`  ${MUTED}tern › reconnecting  ${GRAY}attempt ${attempt}  ${delay}s${RESET}`);
 }
 
 export function printSafetyBanner(ttl?: number): void {
-  if (ttl === undefined) {
-    process.stdout.write(
-      `  ${ANSI.gray}no ttl set — tunnel runs until Ctrl+C${ANSI.reset}\n\n`,
-    );
-    return;
+  if (ttl) {
+    console.log(`  ${MUTED}auto-kill in ${ttl} minutes  ·  Ctrl+C to stop now${RESET}`);
+  } else {
+    console.log(`  ${MUTED}no ttl set  ·  runs until Ctrl+C${RESET}`);
   }
-  process.stdout.write(
-    `  ${ANSI.gray}auto-kill in ${ttl} minutes${ANSI.reset}\n\n`,
+  console.log();
+}
+
+export function printRequest(
+  method: string,
+  path: string,
+  status: number,
+  latencyMs: number,
+  _sourceIp: string,
+): void {
+  const statusColor = status < 300 ? GREEN : status < 500 ? YELLOW : RED;
+  console.log(
+    `  ${GRAY}tern ›  ${RESET}` +
+      `${WHITE}${method.padEnd(6)}${RESET}` +
+      `${CYAN}${path.padEnd(36)}${RESET}` +
+      `${statusColor}${status}${RESET}` +
+      `  ${MUTED}${latencyMs}ms${RESET}`,
   );
+}
+
+export function printSessionEnded(): void {
+  console.log();
+  console.log(`  ${GRAY}[tern]  session ended  ·  tunnel closed, all event data cleared${RESET}`);
+  console.log();
 }
 
 export function printHelp(version: string): void {
