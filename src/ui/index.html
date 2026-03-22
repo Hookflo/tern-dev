@@ -1082,6 +1082,85 @@
         font-weight: 600;
       }
 
+      .snippet-fab {
+        position: fixed;
+        right: 20px;
+        bottom: 80px;
+        border: 1px solid var(--accent-border);
+        background: var(--bg-secondary);
+        color: var(--text-primary);
+        border-radius: 999px;
+        padding: 10px 14px;
+        z-index: 100;
+        cursor: pointer;
+        font-family: var(--sans);
+        font-size: 13px;
+      }
+      .snippet-fab:hover {
+        background: var(--bg-quaternary);
+      }
+      .snippet-popup {
+        position: fixed;
+        bottom: 80px;
+        right: 20px;
+        background: var(--bg-secondary);
+        border: 1px solid var(--accent-border);
+        border-radius: 8px;
+        padding: 12px 14px;
+        z-index: 100;
+        width: min(220px, calc(100vw - 24px));
+        display: none;
+        animation: snippetSlideUp 200ms ease;
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.45);
+      }
+      .snippet-popup.open {
+        display: block;
+      }
+      .snippet-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        gap: 8px;
+      }
+      .snippet-title {
+        color: var(--text-primary);
+        font-size: 12px;
+      }
+      .snippet-close {
+        border: none;
+        background: transparent;
+        color: var(--text-secondary);
+        cursor: pointer;
+        font-size: 14px;
+      }
+      .snippet-copy {
+        margin-top: 10px;
+        border: 1px solid var(--accent-border);
+        background: var(--accent-bg);
+        color: var(--accent);
+        border-radius: 6px;
+        width: 100%;
+        padding: 7px 10px;
+        cursor: pointer;
+        font-family: var(--mono);
+        font-size: 11px;
+      }
+      .snippet-body {
+        color: var(--text-secondary);
+        font-size: 12px;
+      }
+      @keyframes snippetSlideUp {
+        from {
+          transform: translateY(12px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
       /* ── TOAST ── */
       .toast {
         position: fixed;
@@ -1807,6 +1886,18 @@
           <div class="kh"><kbd>D</kbd> compare panel</div>
         </div>
 
+        <button id="snippet-fab" class="snippet-fab" style="display: none">
+          Snippet
+        </button>
+        <div id="snippet-popup" class="snippet-popup" aria-live="polite">
+          <div class="snippet-head">
+            <div class="snippet-title" id="snippet-title">Handler snippet</div>
+            <button class="snippet-close" id="snippet-close">×</button>
+          </div>
+          <div class="snippet-body">npm i @hookflo/tern</div>
+          <button class="snippet-copy" id="snippet-copy">copy handler</button>
+        </div>
+
         <aside
           class="compare-panel"
           id="compare-panel"
@@ -1854,8 +1945,16 @@
         selectedId: null,
         filter: "all",
         tab: "payload",
-        status: { connected: false, state: "connecting", tunnelUrl: "" },
+        framework: null,
+        platform: null,
+        status: {
+          connected: false,
+          state: "connecting",
+          tunnelUrl: "",
+          framework: "nextjs",
+        },
         ws: null,
+        snippet: { dismissed: false, open: false, provider: null },
         compare: {
           aId: null,
           bId: null,
@@ -1897,6 +1996,11 @@
         compareClose: document.getElementById("compare-close"),
         compareBody: document.getElementById("compare-body"),
         ignoreTabBtn: document.getElementById("ignore-tab-btn"),
+        snippetFab: document.getElementById("snippet-fab"),
+        snippetPopup: document.getElementById("snippet-popup"),
+        snippetTitle: document.getElementById("snippet-title"),
+        snippetClose: document.getElementById("snippet-close"),
+        snippetCopy: document.getElementById("snippet-copy"),
       };
 
       const dynamicHeaders = new Set([
@@ -2053,6 +2157,91 @@
         });
       }
 
+      function getVerifySnippet(platform, framework) {
+        if (!platform || platform === "other") return null;
+
+        const envVars = {
+          stripe: "STRIPE_WEBHOOK_SECRET",
+          github: "GITHUB_WEBHOOK_SECRET",
+          clerk: "CLERK_WEBHOOK_SECRET",
+          shopify: "SHOPIFY_WEBHOOK_SECRET",
+          dodo: "DODO_WEBHOOK_SECRET",
+          dodopayments: "DODOPAYMENTS_WEBHOOK_SECRET",
+          paddle: "PADDLE_WEBHOOK_SECRET",
+          lemonsqueezy: "LEMONSQUEEZY_WEBHOOK_SECRET",
+          polar: "POLAR_WEBHOOK_SECRET",
+          workos: "WORKOS_WEBHOOK_SECRET",
+          gitlab: "GITLAB_WEBHOOK_SECRET",
+          sentry: "SENTRY_CLIENT_SECRET",
+          razorpay: "RAZORPAY_WEBHOOK_SECRET",
+        };
+
+        const env = envVars[platform];
+        if (!env) return null;
+
+        const fw = framework || "nextjs";
+        const snippets = {
+          nextjs: `import { createWebhookHandler } from '@hookflo/tern/nextjs'
+
+export const POST = createWebhookHandler({
+  platform: '${platform}',
+  secret: process.env.${env}!,
+  handler: async (payload, metadata) => {
+    // handle ${platform} webhook
+    return { received: true }
+  },
+})`,
+
+          express: `import express from 'express'
+import { createWebhookMiddleware } from '@hookflo/tern/express'
+
+const router = express.Router()
+
+router.post(
+  '/api/webhooks/${platform}',
+  express.raw({ type: '*/*' }),
+  createWebhookMiddleware({
+    platform: '${platform}',
+    secret: process.env.${env}!,
+  }),
+  (req, res) => {
+    const event = req.webhook?.payload
+    // handle ${platform} webhook
+    res.json({ received: true })
+  },
+)`,
+
+          hono: `import { Hono } from 'hono'
+import { createWebhookHandler } from '@hookflo/tern/hono'
+
+const app = new Hono()
+
+app.post('/api/webhooks/${platform}',
+  createWebhookHandler({
+    platform: '${platform}',
+    secret: process.env.${env}!,
+    handler: async (payload, metadata, c) => {
+      // handle ${platform} webhook
+      return c.json({ received: true })
+    },
+  })
+)`,
+
+          cloudflare: `import { createWebhookHandler } from '@hookflo/tern/cloudflare'
+
+export const onRequestPost = createWebhookHandler({
+  platform: '${platform}',
+  secretEnv: '${env}',
+  handler: async (payload) => {
+    // handle ${platform} webhook
+    return { received: true }
+  },
+})`,
+        };
+
+        return snippets[fw] || snippets.nextjs;
+      }
+
       function renderDetail() {
         const event = selectedEvent();
         const has = Boolean(event);
@@ -2096,19 +2285,106 @@
         } else if (state.tab === "response") {
           refs.detailBody.innerHTML = `<div class="stat-row"><div class="stat-box"><div class="stat-lbl">status</div><div class="stat-val ${event.failed ? "fail" : "ok"}">${statusLabel(event)}</div></div><div class="stat-box"><div class="stat-lbl">latency</div><div class="stat-val">${event.latency || 0}ms</div></div><div class="stat-box"><div class="stat-lbl">size</div><div class="stat-val">${(event.body || "").length}</div></div></div><div class="codeblock"><div class="codeblock-head"><span class="code-lbl">error</span></div><pre>${escapeHtml(event.error || "none")}</pre></div>`;
         } else {
-          refs.detailBody.innerHTML = `<div class="verify-box"><div class="verify-title">Signature Verification</div><div class="verify-body">Use provider SDK with raw body and headers. Keep your route on <code>express.raw({ type: '*/*' })</code> and verify against this exact payload.</div></div>`;
+          const detectedPlatform = detectProvider(event.headers) || state.platform;
+          const fw = state.framework;
+          const snippet = getVerifySnippet(detectedPlatform, fw);
+          const platformLabel = detectedPlatform
+            ? detectedPlatform.charAt(0).toUpperCase() +
+              detectedPlatform.slice(1)
+            : null;
+          const frameworkLabel = {
+            nextjs: "Next.js",
+            express: "Express",
+            hono: "Hono",
+            cloudflare: "Cloudflare Workers",
+          }[fw] || fw || "";
+
+          if (snippet) {
+            refs.detailBody.innerHTML = `<div class="codeblock"><div class="codeblock-head"><span class="code-lbl">${escapeHtml(platformLabel)} · ${escapeHtml(frameworkLabel)}</span><button class="code-cp" id="copy-snippet">copy</button></div><pre id="verify-snippet">${escapeHtml(snippet)}</pre></div><div class="verify-box"><div class="verify-body">Install: <code>npm install @hookflo/tern</code> · raw body is handled automatically by the adapter</div></div>`;
+
+            document
+              .getElementById("copy-snippet")
+              ?.addEventListener("click", async () => {
+                try {
+                  await navigator.clipboard.writeText(snippet);
+                  const btn = document.getElementById("copy-snippet");
+                  if (btn) {
+                    btn.textContent = "copied";
+                    btn.classList.add("copied");
+                    setTimeout(() => {
+                      btn.textContent = "copy";
+                      btn.classList.remove("copied");
+                    }, 2000);
+                  }
+                } catch {
+                  // silent fail
+                }
+              });
+          } else {
+            refs.detailBody.innerHTML = `<div class="verify-box"><div class="verify-title">Signature Verification</div><div class="verify-body">Use provider SDK with raw body and headers. Keep your route on <code>express.raw({ type: '*/*' })</code> and verify against this exact payload.</div></div>`;
+          }
         }
       }
 
       function detectProvider(headers = {}) {
-        const keys = new Set(Object.keys(headers).map((k) => k.toLowerCase()));
-        if (keys.has("stripe-signature")) return "Stripe";
-        if (keys.has("x-github-event")) return "GitHub";
-        if (keys.has("x-gitlab-event")) return "GitLab";
-        if (keys.has("sentry-hook-resource")) return "Sentry";
-        if (keys.has("x-twilio-signature")) return "Twilio";
-        if (keys.has("svix-signature")) return "Svix";
-        return "Unknown";
+        if (!headers || typeof headers !== "object") return null;
+
+        const keys = Object.keys(headers).reduce((acc, k) => {
+          acc[k.toLowerCase()] = headers[k];
+          return acc;
+        }, {});
+
+        if (keys["stripe-signature"]) return "stripe";
+        if (keys["x-github-event"]) return "github";
+        if (keys["x-gitlab-event"]) return "gitlab";
+        if (keys["sentry-hook-resource"]) return "sentry";
+        if (keys["x-twilio-signature"]) return "twilio";
+        if (keys["svix-id"] || keys["svix-signature"]) return "svix";
+        if (keys["x-clerk-signature"]) return "clerk";
+
+        return null;
+      }
+
+      function platformName(provider) {
+        const map = {
+          stripe: "Stripe",
+          github: "GitHub",
+          gitlab: "GitLab",
+          sentry: "Sentry",
+          twilio: "Twilio",
+          svix: "Svix",
+          clerk: "Clerk",
+        };
+        return map[provider] || "Webhook";
+      }
+
+      function snippetTemplate(provider, framework) {
+        const envMap = {
+          stripe: "STRIPE_WEBHOOK_SECRET",
+          github: "GITHUB_WEBHOOK_SECRET",
+          clerk: "CLERK_WEBHOOK_SECRET",
+          sentry: "SENTRY_CLIENT_SECRET",
+          twilio: "TWILIO_AUTH_TOKEN",
+          svix: "SVIX_WEBHOOK_SECRET",
+        };
+        if (!envMap[provider]) {
+          return `export async function handler(req, res) {\n  // TODO: implement your webhook handler\n}`;
+        }
+        if (framework === "nextjs") {
+          return `import { verify } from '@hookflo/tern'\nimport { NextResponse } from 'next/server'\n\nexport async function POST(req) {\n  const result = await verify(req, '${provider}', process.env.${envMap[provider]}!)\n  if (!result.isValid) return NextResponse.json({ error: result.error }, { status: 400 })\n  const event = result.payload\n  // TODO: handle event\n  return NextResponse.json({ received: true })\n}`;
+        }
+        return `import { verify } from '@hookflo/tern'\n\nexport async function handler(req, res) {\n  const result = await verify(req, '${provider}', process.env.${envMap[provider]}!)\n  if (!result.isValid) return { status: 400, body: { error: result.error } }\n  const event = result.payload\n  // TODO: handle event\n  return { received: true }\n}`;
+      }
+
+      function updateSnippetPopup(event) {
+        if (state.snippet.dismissed) return;
+        const provider = detectProvider(event?.headers || {});
+        if (!provider) return;
+        state.snippet.provider = provider;
+        state.snippet.open = true;
+        refs.snippetTitle.textContent = `${platformName(provider)} handler snippet`;
+        refs.snippetPopup.classList.add("open");
+        refs.snippetFab.style.display = "none";
       }
 
       function formatPayloadSize(body) {
@@ -2468,6 +2744,7 @@
           state.events.unshift(event);
           if (!state.selectedId) selectPrimary(event.id);
         } else state.events[idx] = event;
+        updateSnippetPopup(event);
       }
 
       function connectWs() {
@@ -2509,6 +2786,8 @@
         state.events = eventsData.events || [];
         if (state.events[0]) selectPrimary(state.events[0].id);
         setStatus(statusData);
+        state.framework = statusData.framework || "nextjs";
+        state.platform = statusData.platform || null;
         render();
       }
 
@@ -2520,6 +2799,35 @@
           setTimeout(() => refs.copyBtn.classList.remove("copied"), 2000);
         } catch {
           showToast("Failed to copy");
+        }
+      });
+
+      refs.snippetClose.addEventListener("click", () => {
+        state.snippet.dismissed = true;
+        state.snippet.open = false;
+        refs.snippetPopup.classList.remove("open");
+        refs.snippetFab.style.display = "inline-flex";
+      });
+
+      refs.snippetFab.addEventListener("click", () => {
+        if (!state.snippet.provider) return;
+        state.snippet.open = true;
+        refs.snippetPopup.classList.add("open");
+        refs.snippetFab.style.display = "none";
+      });
+
+      refs.snippetCopy.addEventListener("click", async () => {
+        const provider = state.snippet.provider;
+        if (!provider) return;
+        try {
+          const snippet = snippetTemplate(
+            provider,
+            state.status.framework || "nextjs",
+          );
+          await navigator.clipboard.writeText(snippet);
+          showToast("handler copied");
+        } catch {
+          showToast("copy failed");
         }
       });
 

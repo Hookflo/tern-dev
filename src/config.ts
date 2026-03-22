@@ -12,6 +12,8 @@ export interface TernConfig {
   noUi?: boolean;
   relay?: string;
   maxEvents?: number;
+  platform?: string;
+  framework?: string;
 
   // New control flags
   ttl?: number;
@@ -93,6 +95,8 @@ export function resolveConfig(cliArgs: Partial<TernConfig>): TernConfig {
     noUi: cliArgs.noUi ?? fileConfig.noUi ?? DEFAULT_CONFIG.noUi,
     relay: cliArgs.relay ?? fileConfig.relay ?? DEFAULT_CONFIG.relay,
     maxEvents: cliArgs.maxEvents ?? fileConfig.maxEvents ?? DEFAULT_CONFIG.maxEvents,
+    platform: cliArgs.platform ?? fileConfig.platform,
+    framework: cliArgs.framework ?? fileConfig.framework,
     ttl: cliArgs.ttl ?? fileConfig.ttl,
     rateLimit: cliArgs.rateLimit ?? fileConfig.rateLimit,
     allowIp: cliArgs.allowIp ?? fileConfig.allowIp,

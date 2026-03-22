@@ -46,6 +46,9 @@ export class UiServer {
           sessionId: status.sessionId,
           port: this.options.localPort,
           version: this.options.version,
+          platform: this.options.forwardConfig.platform ?? null,
+          framework: this.options.forwardConfig.framework ?? null,
+          webhookPath: this.options.forwardConfig.path ?? "/",
         });
         return;
       }
