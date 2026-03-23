@@ -1,6 +1,6 @@
 import { execSync } from "node:child_process";
 import * as fs from "node:fs";
-import { printStep, printStepDone } from "./print";
+import { printStep, printStepDone } from "./print.js";
 
 /** Detects the package manager install command from lockfiles. */
 export function detectPackageManager(): string {

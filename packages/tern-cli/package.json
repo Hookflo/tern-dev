@@ -17,6 +17,11 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@hookflo/tern-dev": "latest"
+    "@hookflo/tern-dev": "latest",
+    "@clack/prompts": "latest"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=18"
   }
 }

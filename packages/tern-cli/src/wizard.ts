@@ -1,4 +1,4 @@
-import { select, text } from "./prompts";
+import * as clack from "@clack/prompts";
 
 /** Platform option metadata shown in the setup wizard. */
 export const PLATFORMS = [
@@ -57,33 +57,51 @@ export interface WizardAnswers {
   port: string;
 }
 
+function handleCancel(value: unknown): void {
+  if (!clack.isCancel(value)) return;
+  clack.cancel("cancelled");
+  process.exit(0);
+}
+
 /** Runs the interactive setup wizard. */
 export async function askQuestions(): Promise<WizardAnswers> {
-  const platform = await select<Platform>(
-    "which platform are you integrating?",
-    PLATFORMS,
-  );
+  const platform = await clack.select<Platform>({
+    message: "which platform are you integrating?",
+    options: [...PLATFORMS],
+  });
+  handleCancel(platform);
 
-  const framework = await select<Framework>(
-    "which framework are you using?",
-    FRAMEWORKS,
-  );
+  const framework = await clack.select<Framework>({
+    message: "which framework are you using?",
+    options: [...FRAMEWORKS],
+  });
+  handleCancel(framework);
 
-  const action = await select<Action>("what would you like to do?", [
-    { value: "both", label: "set up webhook handler + test locally" },
-    { value: "handler", label: "set up webhook handler only" },
-    { value: "tunnel", label: "test locally only" },
-  ]);
+  const action = await clack.select<Action>({
+    message: "what would you like to do?",
+    options: [
+      { value: "both", label: "set up webhook handler + test locally" },
+      { value: "handler", label: "set up webhook handler only" },
+      { value: "tunnel", label: "test locally only" },
+    ],
+  });
+  handleCancel(action);
 
   let port = "3000";
   if (action !== "handler") {
-    port = await text("which port is your app running on?", "3000", (v: string) => {
-      const n = Number(v);
-      if (!Number.isInteger(n) || n < 1 || n > 65535) {
-        return "enter a valid port number";
-      }
-      return undefined;
+    const entered = await clack.text({
+      message: "which port is your app running on?",
+      placeholder: "3000",
+      defaultValue: "3000",
+      validate: (v: string) => {
+        const n = Number(v);
+        if (!Number.isInteger(n) || n < 1 || n > 65535)
+          return "enter a valid port number";
+        return undefined;
+      },
     });
+    handleCancel(entered);
+    port = entered;
   }
 
   return { platform, framework, action, port };

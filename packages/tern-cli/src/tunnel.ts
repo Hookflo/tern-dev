@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
-import { copyToClipboard } from "./clipboard";
-import { openBrowser } from "./browser";
+import { copyToClipboard } from "./clipboard.js";
+import { openBrowser } from "./browser.js";
 import {
   printEvent,
   printExit,
@@ -9,7 +9,7 @@ import {
   printStepDone,
   printUrlBox,
   startConnectingAnimation,
-} from "./print";
+} from "./print.js";
 
 /** Starts tern-dev forwarding and streams connection updates. */
 export function startTunnel(

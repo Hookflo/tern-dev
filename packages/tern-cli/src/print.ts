@@ -1,4 +1,4 @@
-import { CYAN, GRAY, GREEN, MUTED, RED, RESET, WHITE, YELLOW } from "./colors";
+import { CYAN, GRAY, GREEN, MUTED, RED, RESET, WHITE, YELLOW } from "./colors.js";
 
 const LABEL_WIDTH = 16;
 

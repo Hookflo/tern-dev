@@ -1,12 +1,13 @@
 #!/usr/bin/env node
-import { GRAY, RESET } from "./colors";
-import { createConfig } from "./config";
-import { createHandlerFile, getFilePath, getWebhookPath } from "./files";
-import { installTern } from "./install";
-import { printEnvBlock, printLogo, printStep, printStepDone, printStepFile, printSummary } from "./print";
-import { getTemplate } from "./templates";
-import { startTunnel } from "./tunnel";
-import { askQuestions, ENV_VARS, getPlatformLabel } from "./wizard";
+import "./patch-clack.js";
+import { GRAY, RESET } from "./colors.js";
+import { createConfig } from "./config.js";
+import { createHandlerFile, getFilePath, getWebhookPath } from "./files.js";
+import { installTern } from "./install.js";
+import { printEnvBlock, printLogo, printStep, printStepDone, printStepFile, printSummary } from "./print.js";
+import { getTemplate } from "./templates.js";
+import { startTunnel } from "./tunnel.js";
+import { askQuestions, ENV_VARS, getPlatformLabel } from "./wizard.js";
 
 function actionLabel(action: "both" | "handler" | "tunnel"): string {
   if (action === "both") return "handler + local testing";
