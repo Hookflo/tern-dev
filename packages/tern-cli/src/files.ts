@@ -1,6 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
-import * as clack from "@clack/prompts";
+import { confirm } from "./prompts";
 
 /** Returns the target handler file path for a framework/platform pair. */
 export function getFilePath(framework: string, platform: string): string {
@@ -48,10 +48,10 @@ export async function createHandlerFile(
   const fullPath = path.join(process.cwd(), filePath);
 
   if (fs.existsSync(fullPath)) {
-    const overwrite = await clack.confirm({
-      message: `${path.basename(fullPath)} already exists. overwrite?`,
-    });
-    if (clack.isCancel(overwrite) || !overwrite) {
+    const overwrite = await confirm(
+      `${path.basename(fullPath)} already exists. overwrite?`,
+    );
+    if (!overwrite) {
       return false;
     }
   }
