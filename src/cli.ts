@@ -5,7 +5,7 @@ import minimist from "minimist";
 import { resolveConfig, TernConfig, validateConfig } from "./config";
 import { EventStore } from "./event-store";
 import { forward, setLocalTlsCredentials } from "./forwarder";
-import { error, info, printBanner, printHelp, printLogo, printSafetyBanner, success, warn } from "./logger";
+import { error, info, printBanner, printConnected, printHelp, printLogo, printReconnecting, printRequest, printSafetyBanner, printSessionEnded, warn } from "./logger";
 import { RelayClient } from "./relay-client";
 import { RelayConnectedMessage, RelayMessage, StatusPayload } from "./types";
 import { UiServer } from "./ui-server";
@@ -287,7 +287,7 @@ async function main(): Promise<void> {
     const forwardTarget = cliArgs.forwardTarget ?? `localhost:${config.port ?? 0}${config.path && config.path !== "/" ? config.path : ""}`;
     printBanner(payload.url, forwardTarget, uiPort ?? (config.uiPort ?? 2019), Boolean(config.noUi));
     printSafetyBanner(config.ttl);
-    success("connected ✓");
+    printConnected();
 
     if (config.ttl !== undefined) {
       clearTimers();
@@ -316,7 +316,7 @@ async function main(): Promise<void> {
 
   relayClient.on("reconnecting", ({ attempt, delayMs }) => {
     setStatus({ connected: false, state: "reconnecting" });
-    warn(`reconnecting... (attempt ${attempt}, ${Math.max(1, Math.round(delayMs / 1000))}s)`);
+    printReconnecting(attempt, Math.max(1, Math.round(delayMs / 1000)));
   });
 
   relayClient.on("disconnect", () => {
@@ -332,9 +332,13 @@ async function main(): Promise<void> {
     if (event.error && event.status === null) {
       warn(event.error);
     }
-    const statusLabel = event.status ? `${event.status}` : "ERR";
-    info(
-      `${event.method} ${event.path} → ${statusLabel} ${event.latency ?? 0}ms`,
+    const statusCode = event.status ?? 500;
+    printRequest(
+      event.method,
+      event.path,
+      statusCode,
+      event.latency ?? 0,
+      event.sourceIp ?? "unknown",
     );
     appendAuditLog(config, {
       method: event.method,
@@ -366,10 +370,14 @@ async function main(): Promise<void> {
   }
 
   process.on("SIGINT", () => {
-    shutdown("session ended · all event data cleared");
+    printSessionEnded();
+    shutdown();
   });
 
-  process.on("SIGTERM", () => shutdown("session ended · all event data cleared"));
+  process.on("SIGTERM", () => {
+    printSessionEnded();
+    shutdown();
+  });
 
   relayClient.connect(config.relay ?? "wss://tern-relay.hookflo-tern.workers.dev");
 }

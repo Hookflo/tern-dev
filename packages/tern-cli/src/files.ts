@@ -1,7 +1,6 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as clack from "@clack/prompts";
-import { CYAN, RESET } from "./colors";
 
 /** Returns the target handler file path for a framework/platform pair. */
 export function getFilePath(framework: string, platform: string): string {
@@ -45,7 +44,7 @@ export function getWebhookPath(platform: string): string {
 export async function createHandlerFile(
   filePath: string,
   content: string,
-): Promise<void> {
+): Promise<boolean> {
   const fullPath = path.join(process.cwd(), filePath);
 
   if (fs.existsSync(fullPath)) {
@@ -53,12 +52,11 @@ export async function createHandlerFile(
       message: `${path.basename(fullPath)} already exists. overwrite?`,
     });
     if (clack.isCancel(overwrite) || !overwrite) {
-      clack.log.warn(`skipped ${filePath}`);
-      return;
+      return false;
     }
   }
 
   fs.mkdirSync(path.dirname(fullPath), { recursive: true });
   fs.writeFileSync(fullPath, content, "utf8");
-  clack.log.success(`created ${CYAN}${filePath}${RESET}`);
+  return true;
 }
