@@ -1,144 +1,21 @@
-/** Returns handler template source code for framework/platform combination. */
-export function getTemplate(
-  framework: string,
-  platform: string,
-  envVar: string,
-  platformLabel: string,
-): string {
-  if (platform === "other") return getOtherTemplate(framework);
+export function getTemplate(framework: string, platform: string): string {
+  const env = `${platform.toUpperCase().replace(/-/g, '_')}_WEBHOOK_SECRET`
 
   switch (framework) {
-    case "nextjs":
-      return nextjsTemplate(platform, envVar, platformLabel);
-    case "express":
-      return expressTemplate(platform, envVar, platformLabel);
-    case "hono":
-      return honoTemplate(platform, envVar, platformLabel);
-    case "cloudflare":
-      return cloudflareTemplate(platform, envVar, platformLabel);
+    case 'hono':
+      return `import { Hono } from 'hono'\nimport { createWebhookHandler } from '@hookflo/tern/hono'\n\nconst router = new Hono()\n\nrouter.post('/${platform}', createWebhookHandler({\n  platform: '${platform}',\n  secret: process.env.${env}!,\n  // queue: { retries: 3 }, // uncomment + add QSTASH_* env vars for guaranteed delivery\n  handler: async (payload) => {\n    console.log('${platform} event:', payload?.type)\n    // TODO: handle payload\n    return { received: true }\n  },\n}))\n\nexport default router\n`
+    case 'nextjs':
+      return `import { createWebhookHandler } from '@hookflo/tern/nextjs'\n\nexport const POST = createWebhookHandler({\n  platform: '${platform}',\n  secret: process.env.${env}!,\n  // queue: true, // uncomment + add QSTASH_* env vars for guaranteed delivery (Vercel only)\n  // queue: { token: process.env.QSTASH_TOKEN!, retries: 3 }, // explicit config\n  handler: async (payload) => {\n    console.log('${platform} event:', payload?.type)\n    // TODO: handle payload\n    return { received: true }\n  },\n})\n`
+    case 'express':
+      return `import { Router } from 'express'\nimport { createWebhookMiddleware } from '@hookflo/tern/express'\n\nconst router = Router()\n\n// Note: register this router BEFORE express.json() in src/index.ts\nrouter.post('/${platform}',\n  createWebhookMiddleware({\n    platform: '${platform}',\n    secret: process.env.${env}!,\n  }),\n  (req, res) => {\n    const { payload } = (req as any).webhook\n    console.log('${platform} event:', payload?.type)\n    // TODO: handle payload\n    res.json({ received: true })\n  }\n)\n\nexport default router\n`
+    case 'cloudflare':
+      return `import { createWebhookHandler } from '@hookflo/tern/cloudflare'\n\nexport interface Env {\n  WEBHOOK_SECRET: string // set via: wrangler secret put WEBHOOK_SECRET\n}\n\nexport default {\n  async fetch(request: Request, env: Env): Promise<Response> {\n    const url = new URL(request.url)\n\n    if (url.pathname === '/webhooks/${platform}' && request.method === 'POST') {\n      const handler = createWebhookHandler({\n        platform: '${platform}',\n        secret: env.WEBHOOK_SECRET, // Workers use env.*, not process.env\n        handler: async (payload) => {\n          console.log('${platform} event:', payload?.type)\n          // TODO: handle payload\n          return { received: true }\n        },\n      })\n      return handler(request, env)\n    }\n\n    return new Response('not found', { status: 404 })\n  },\n}\n`
     default:
-      return genericTemplate(platform, envVar, platformLabel);
+      return `export default async function handler(request: Request) {\n  const payload = await request.json()\n  console.log('${platform} event:', payload?.type)\n  return new Response(JSON.stringify({ received: true }), { status: 200 })\n}\n`
   }
 }
 
-function nextjsTemplate(p: string, env: string, label: string): string {
-  return `import { createWebhookHandler } from '@hookflo/tern/nextjs'
-
-export const POST = createWebhookHandler({
-  platform: '${p}',
-  secret: process.env.${env}!,
-  handler: async (payload, metadata) => {
-    // TODO: handle ${label} webhook
-    console.log('received ${label} event:', payload)
-    return { received: true }
-  },
-})
-`;
-}
-
-function expressTemplate(p: string, env: string, label: string): string {
-  return `import express from 'express'
-import { createWebhookMiddleware } from '@hookflo/tern/express'
-
-const router = express.Router()
-
-router.post(
-  '/api/webhooks/${p}',
-  express.raw({ type: '*/*' }),
-  createWebhookMiddleware({
-    platform: '${p}',
-    secret: process.env.${env}!,
-  }),
-  (req, res) => {
-    const event = (req as any).webhook?.payload
-    // TODO: handle ${label} webhook
-    console.log('received ${label} event:', event)
-    res.json({ received: true })
-  },
-)
-
-export default router
-`;
-}
-
-function honoTemplate(p: string, env: string, label: string): string {
-  return `import { Hono } from 'hono'
-import { createWebhookHandler } from '@hookflo/tern/hono'
-
-const app = new Hono()
-
-app.post(
-  '/api/webhooks/${p}',
-  createWebhookHandler({
-    platform: '${p}',
-    secret: process.env.${env}!,
-    handler: async (payload, metadata, c) => {
-      // TODO: handle ${label} webhook
-      console.log('received ${label} event:', payload)
-      return c.json({ received: true })
-    },
-  })
-)
-
-export default app
-`;
-}
-
-function cloudflareTemplate(p: string, env: string, label: string): string {
-  return `import { createWebhookHandler } from '@hookflo/tern/cloudflare'
-
-export const onRequestPost = createWebhookHandler({
-  platform: '${p}',
-  secretEnv: '${env}',
-  handler: async (payload) => {
-    // TODO: handle ${label} webhook
-    console.log('received ${label} event:', payload)
-    return { received: true, payload }
-  },
-})
-`;
-}
-
-function genericTemplate(p: string, env: string, label: string): string {
-  return `import { WebhookVerificationService } from '@hookflo/tern'
-
-export async function handleWebhook(request: Request) {
-  const result = await WebhookVerificationService.verify(request, {
-    platform: '${p}',
-    secret: process.env.${env}!,
-  })
-
-  if (!result.isValid) {
-    return new Response(
-      JSON.stringify({ error: result.error }),
-      { status: 400 }
-    )
-  }
-
-  // TODO: handle ${label} webhook
-  console.log('received ${label} event:', result.payload)
-  return new Response(
-    JSON.stringify({ received: true }),
-    { status: 200 }
-  )
-}
-`;
-}
-
-function getOtherTemplate(_framework: string): string {
-  return `// TODO: add webhook verification for your platform
-// see https://github.com/Hookflo/tern for supported platforms
-
-export async function handleWebhook(request: Request) {
-  // verify signature here
-  
-  const body = await request.json()
-  console.log('received webhook:', body)
-
-  return new Response(
-    JSON.stringify({ received: true }),
-    { status: 200 }
-  )
-}
-`;
+export function getEnvKeys(platform: string): string[] {
+  const secret = `${platform.toUpperCase().replace(/-/g, '_')}_WEBHOOK_SECRET`
+  return [secret]
 }

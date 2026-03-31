@@ -4,20 +4,28 @@
   "description": "Interactive webhook setup wizard for tern",
   "license": "MIT",
   "bin": {
-    "tern": "./dist/index.js"
+    "tern": "./dist/cli.js"
   },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/cli.js",
+  "types": "./dist/cli.d.ts",
   "files": [
     "dist",
     "README.md"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --test"
   },
   "dependencies": {
-    "@clack/prompts": "latest",
-    "@hookflo/tern-dev": "latest"
-  }
+    "@hookflo/tern-dev": "latest",
+    "ink": "^5.2.1",
+    "react": "^18.3.1",
+    "ink-select-input": "^6.2.0",
+    "ink-spinner": "^5.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12"
+  },
+  "type": "module"
 }
