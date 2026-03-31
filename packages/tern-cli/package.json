@@ -4,10 +4,10 @@
   "description": "Interactive webhook setup wizard for tern",
   "license": "MIT",
   "bin": {
-    "tern": "./dist/index.js"
+    "tern": "./dist/cli.js"
   },
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "main": "./dist/cli.js",
+  "types": "./dist/cli.d.ts",
   "files": [
     "dist",
     "README.md"
@@ -26,5 +26,6 @@
   "devDependencies": {
     "@types/react": "^18.3.12",
     "@types/minimist": "^1.2.5"
-  }
+  },
+  "type": "module"
 }
