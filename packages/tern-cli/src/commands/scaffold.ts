@@ -1,9 +1,9 @@
-import { createConfig } from '../config'
-import { createHandlerFile, createSupportFiles, getFilePath, getWebhookPath } from '../files'
-import { installTern } from '../install'
-import { getTemplate } from '../templates'
-import { startTunnel } from '../tunnel'
-import { askQuestions, ENV_VARS, getPlatformLabel } from '../wizard'
+import { createConfig } from '../config.js'
+import { createHandlerFile, createSupportFiles, getFilePath, getWebhookPath } from '../files.js'
+import { installTern } from '../install.js'
+import { getTemplate } from '../templates.js'
+import { startTunnel } from '../tunnel.js'
+import { askQuestions, ENV_VARS, getPlatformLabel } from '../wizard.js'
 
 export async function run(): Promise<{ framework: string; routePath: string; port: number; envVar: string }> {
   const { platform, framework, action, port } = await askQuestions()

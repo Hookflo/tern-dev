@@ -1,8 +1,8 @@
 import { spawn } from "node:child_process";
-import { CYAN, GRAY, GREEN, RESET } from "./colors";
-import { copyToClipboard } from "./clipboard";
-import { openBrowser } from "./browser";
-import { printUrlBox } from "./print";
+import { CYAN, GRAY, GREEN, RESET } from "./colors.js";
+import { copyToClipboard } from "./clipboard.js";
+import { openBrowser } from "./browser.js";
+import { printUrlBox } from "./print.js";
 
 /** Starts tern-dev forwarding and streams connection updates. */
 export function startTunnel(

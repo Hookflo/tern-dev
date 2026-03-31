@@ -1,4 +1,4 @@
-import { CYAN, GRAY, GREEN, RESET } from './colors'
+import { CYAN, GRAY, GREEN, RESET } from './colors.js'
 
 export function printUrlBox(platformLabel: string, url: string, copied: boolean): void {
   const line1 = `  paste this in ${platformLabel} webhook settings:`

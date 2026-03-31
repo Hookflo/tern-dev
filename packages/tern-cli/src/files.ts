@@ -1,6 +1,6 @@
 import * as fs from 'node:fs'
 import * as path from 'node:path'
-import { getDotEnvTemplate, getEnvModuleTemplate, getServerEntryTemplate, getWebhookIndexTemplate } from './templates'
+import { getDotEnvTemplate, getEnvModuleTemplate, getServerEntryTemplate, getWebhookIndexTemplate } from './templates.js'
 
 export function getFilePath(framework: string, platform: string): string {
   switch (framework) {
