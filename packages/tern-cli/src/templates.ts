@@ -1,144 +1,99 @@
-/** Returns handler template source code for framework/platform combination. */
-export function getTemplate(
-  framework: string,
-  platform: string,
-  envVar: string,
-  platformLabel: string,
-): string {
-  if (platform === "other") return getOtherTemplate(framework);
+const reliabilityComment = `// ─── Reliability (Upstash QStash) ────────────────────────────────────────────
+// queue: false  →  fire-and-forget, handler runs synchronously in request
+// queue: true   →  verified webhook is enqueued to QStash immediately;
+//                  platform (Stripe/GitHub/etc) gets 200 in ~100ms;
+//                  your handler runs ~1s later via QStash delivery;
+//                  failed handlers are retried with exponential backoff;
+//                  exhausted retries land in DLQ for manual replay.
+//
+// To enable: set queue: true and add to .env:
+//   QSTASH_TOKEN=
+//   QSTASH_CURRENT_SIGNING_KEY=
+//   QSTASH_NEXT_SIGNING_KEY=
+//   Get keys: https://console.upstash.com/qstash
+// ─────────────────────────────────────────────────────────────────────────────`
 
+const alertComment = (source: "env" | "process") => `// ─── Alerting (optional) ─────────────────────────────────────────────────────
+// Uncomment to send a message to Slack/Discord when a webhook fails.
+// Set SLACK_WEBHOOK_URL or DISCORD_WEBHOOK_URL in .env to enable.
+//
+// async function sendAlert(message: string) {
+//   const url = ${source === "env" ? "env.SLACK_WEBHOOK_URL ?? env.DISCORD_WEBHOOK_URL" : "process.env.SLACK_WEBHOOK_URL ?? process.env.DISCORD_WEBHOOK_URL"}
+//   if (!url) return
+//   await fetch(url, {
+//     method: 'POST',
+//     headers: { 'Content-Type': 'application/json' },
+//     body: JSON.stringify({ text: message }),   // Slack format
+//     // body: JSON.stringify({ content: message }), // Discord format
+//   })
+// }
+//
+// Usage inside handler on failure:
+//   await sendAlert(\`❌ ${"${p}"} webhook failed: ${"${payload?.type}"}\`)
+// ─────────────────────────────────────────────────────────────────────────────`
+
+/** Returns platform handler template source code for framework/platform combination. */
+export function getTemplate(framework: string, platform: string, envVar: string): string {
   switch (framework) {
-    case "nextjs":
-      return nextjsTemplate(platform, envVar, platformLabel);
-    case "express":
-      return expressTemplate(platform, envVar, platformLabel);
-    case "hono":
-      return honoTemplate(platform, envVar, platformLabel);
-    case "cloudflare":
-      return cloudflareTemplate(platform, envVar, platformLabel);
+    case 'nextjs':
+      return nextjsTemplate(platform, envVar)
+    case 'express':
+      return expressTemplate(platform, envVar)
+    case 'hono':
+      return honoTemplate(platform, envVar)
+    case 'cloudflare':
+      return cloudflareTemplate(platform)
     default:
-      return genericTemplate(platform, envVar, platformLabel);
+      return genericTemplate(platform, envVar)
   }
 }
 
-function nextjsTemplate(p: string, env: string, label: string): string {
-  return `import { createWebhookHandler } from '@hookflo/tern/nextjs'
-
-export const POST = createWebhookHandler({
-  platform: '${p}',
-  secret: process.env.${env}!,
-  handler: async (payload, metadata) => {
-    // TODO: handle ${label} webhook
-    console.log('received ${label} event:', payload)
-    return { received: true }
-  },
-})
-`;
+export function getWebhookIndexTemplate(framework: string, platform: string): string | null {
+  const routerName = `${platform}Router`
+  if (framework === 'hono') {
+    return `import { Hono } from 'hono'\nimport ${routerName} from './${platform}.js'\n\nconst webhooks = new Hono()\n\nwebhooks.route('/', ${routerName})\n\nexport default webhooks\n`
+  }
+  if (framework === 'express') {
+    return `import { Router } from 'express'\nimport ${routerName} from './${platform}.js'\n\nconst webhooks = Router()\n\nwebhooks.use('/', ${routerName})\n\nexport default webhooks\n`
+  }
+  return null
 }
 
-function expressTemplate(p: string, env: string, label: string): string {
-  return `import express from 'express'
-import { createWebhookMiddleware } from '@hookflo/tern/express'
-
-const router = express.Router()
-
-router.post(
-  '/api/webhooks/${p}',
-  express.raw({ type: '*/*' }),
-  createWebhookMiddleware({
-    platform: '${p}',
-    secret: process.env.${env}!,
-  }),
-  (req, res) => {
-    const event = (req as any).webhook?.payload
-    // TODO: handle ${label} webhook
-    console.log('received ${label} event:', event)
-    res.json({ received: true })
-  },
-)
-
-export default router
-`;
-}
-
-function honoTemplate(p: string, env: string, label: string): string {
-  return `import { Hono } from 'hono'
-import { createWebhookHandler } from '@hookflo/tern/hono'
-
-const app = new Hono()
-
-app.post(
-  '/api/webhooks/${p}',
-  createWebhookHandler({
-    platform: '${p}',
-    secret: process.env.${env}!,
-    handler: async (payload, metadata, c) => {
-      // TODO: handle ${label} webhook
-      console.log('received ${label} event:', payload)
-      return c.json({ received: true })
-    },
-  })
-)
-
-export default app
-`;
-}
-
-function cloudflareTemplate(p: string, env: string, label: string): string {
-  return `import { createWebhookHandler } from '@hookflo/tern/cloudflare'
-
-export const onRequestPost = createWebhookHandler({
-  platform: '${p}',
-  secretEnv: '${env}',
-  handler: async (payload) => {
-    // TODO: handle ${label} webhook
-    console.log('received ${label} event:', payload)
-    return { received: true, payload }
-  },
-})
-`;
-}
-
-function genericTemplate(p: string, env: string, label: string): string {
-  return `import { WebhookVerificationService } from '@hookflo/tern'
-
-export async function handleWebhook(request: Request) {
-  const result = await WebhookVerificationService.verify(request, {
-    platform: '${p}',
-    secret: process.env.${env}!,
-  })
-
-  if (!result.isValid) {
-    return new Response(
-      JSON.stringify({ error: result.error }),
-      { status: 400 }
-    )
+export function getServerEntryTemplate(framework: string): string | null {
+  if (framework === 'hono') {
+    return `import { serve } from '@hono/node-server'\nimport { Hono } from 'hono'\nimport { env } from './env.js'\nimport webhooks from './routes/webhooks/index.js'\n\nconst app = new Hono()\n\napp.get('/', (c) => c.json({ status: 'ok', framework: 'hono' }))\napp.route('/webhooks', webhooks)\n\nconst port = Number(env.PORT ?? 3000)\n\nserve({ fetch: app.fetch, port }, () =>\n  console.log(\`🚀 running at http://localhost:${"${port}"}\`)\n)\n`
   }
 
-  // TODO: handle ${label} webhook
-  console.log('received ${label} event:', result.payload)
-  return new Response(
-    JSON.stringify({ received: true }),
-    { status: 200 }
-  )
-}
-`;
+  if (framework === 'express') {
+    return `import express from 'express'\nimport { env } from './env.js'\nimport webhookRouter from './routes/webhooks/index.js'\n\nconst app = express()\n\napp.get('/', (_req, res) => res.json({ status: 'ok', framework: 'express' }))\n\n// ─── WEBHOOK ROUTES MUST COME BEFORE express.json() ──────────────────────────\n// express.json() consumes the raw body. tern needs the raw bytes to verify\n// the signature. Registering webhook routes first ensures express.raw() (used\n// internally by the tern adapter) runs before express.json() can interfere.\n// ─────────────────────────────────────────────────────────────────────────────\napp.use('/webhooks', webhookRouter)\n\n// Global JSON parser — AFTER webhook routes\napp.use(express.json())\n\nconst port = Number(env.PORT ?? 3002)\napp.listen(port, () =>\n  console.log(\`🚀 running at http://localhost:${"${port}"}\`)\n)\n`
+  }
+  return null
 }
 
-function getOtherTemplate(_framework: string): string {
-  return `// TODO: add webhook verification for your platform
-// see https://github.com/Hookflo/tern for supported platforms
-
-export async function handleWebhook(request: Request) {
-  // verify signature here
-  
-  const body = await request.json()
-  console.log('received webhook:', body)
-
-  return new Response(
-    JSON.stringify({ received: true }),
-    { status: 200 }
-  )
+export function getEnvModuleTemplate(envVar: string): string {
+  return `// src/env.ts — auto-generated by tern-dev\n// All process.env access goes through here so missing vars fail at startup,\n// not at request time.\n\nconst required = (key: string): string => {\n  const val = process.env[key]\n  if (!val) throw new Error(\`[tern] Missing required env var: ${"${key}"}\`)\n  return val\n}\n\nexport const env = {\n  // ── Webhook secrets ──────────────────────────────────────────────────────\n  ${envVar}: required('${envVar}'),\n\n  // ── Reliability (Upstash QStash) — uncomment if queue: true ─────────────\n  // QSTASH_TOKEN:                required('QSTASH_TOKEN'),\n  // QSTASH_CURRENT_SIGNING_KEY:  required('QSTASH_CURRENT_SIGNING_KEY'),\n  // QSTASH_NEXT_SIGNING_KEY:     required('QSTASH_NEXT_SIGNING_KEY'),\n\n  // ── Alerting — uncomment to enable webhook failure alerts ────────────────\n  // SLACK_WEBHOOK_URL:    process.env.SLACK_WEBHOOK_URL,    // optional\n  // DISCORD_WEBHOOK_URL:  process.env.DISCORD_WEBHOOK_URL,  // optional\n\n  // ── Server ───────────────────────────────────────────────────────────────\n  PORT: process.env.PORT ?? '3000',\n}\n`
 }
-`;
+
+export function getDotEnvTemplate(envVar: string): string {
+  return `# ─── Webhook Secrets ──────────────────────────────────────────────────────────\n${envVar}=\n\n# ─── Reliability (Upstash QStash) ────────────────────────────────────────────\n# Uncomment and fill in if you set queue: true in your handler.\n# Get keys from: https://console.upstash.com/qstash\n#\n# QSTASH_TOKEN=\n# QSTASH_CURRENT_SIGNING_KEY=\n# QSTASH_NEXT_SIGNING_KEY=\n\n# ─── Alerting ─────────────────────────────────────────────────────────────────\n# Add a Slack or Discord webhook URL to receive failure alerts.\n# Slack:   https://api.slack.com/messaging/webhooks\n# Discord: https://support.discord.com/hc/en-us/articles/228383668\n#\n# SLACK_WEBHOOK_URL=\n# DISCORD_WEBHOOK_URL=\n\n# ─── Server ───────────────────────────────────────────────────────────────────\nPORT=3000\n`
+}
+
+function nextjsTemplate(p: string, env: string): string {
+  return `import { createWebhookHandler } from '@hookflo/tern/nextjs'\n\n${reliabilityComment}\n\n${alertComment('process')}\n\nexport const POST = createWebhookHandler({\n  platform: '${p}',\n  secret: process.env.${env}!,\n  queue: false,\n  handler: async (payload) => {\n    console.log('✅ ${p} webhook verified. Event:', payload?.type)\n    return { received: true }\n  },\n})\n`
+}
+
+function expressTemplate(p: string, env: string): string {
+  return `import { Router } from 'express'\nimport { createWebhookMiddleware } from '@hookflo/tern/express'\nimport { env } from '../../env.js'\n\n// ─── Reliability ─────────────────────────────────────────────────────────────\n// The tern Express adapter applies express.raw() on this route internally.\n// NEVER add express.json() before this router in src/index.ts — it will\n// consume the body stream and break signature verification.\n// ─────────────────────────────────────────────────────────────────────────────\n\n${alertComment('env')}\n\nconst router = Router()\n\nrouter.post(\n  '/${p}',\n  createWebhookMiddleware({\n    platform: '${p}',\n    secret: env.${env},\n  }),\n  (req, res) => {\n    const payload = (req as any).webhook?.payload\n    console.log('✅ ${p} webhook verified. Event:', payload?.type)\n    res.json({ received: true })\n  }\n)\n\nexport default router\n`
+}
+
+function honoTemplate(p: string, env: string): string {
+  return `import { Hono } from 'hono'\nimport { createWebhookHandler } from '@hookflo/tern/hono'\nimport { env } from '../../env.js'\n\n${reliabilityComment}\n\n${alertComment('env')}\n\nconst router = new Hono()\n\nrouter.post('/${p}', createWebhookHandler({\n  platform: '${p}',\n  secret: env.${env},\n  queue: false,\n  handler: async (payload) => {\n    console.log('✅ ${p} webhook verified. Event:', payload?.type)\n    return { received: true }\n  },\n}))\n\nexport default router\n`
+}
+
+function cloudflareTemplate(p: string): string {
+  return `import { createWebhookHandler } from '@hookflo/tern/cloudflare'\n\n// ─── Reliability ─────────────────────────────────────────────────────────────\n// queue: false  →  direct execution\n// queue: true   →  not supported on Workers — use Cloudflare Queues for guaranteed delivery\n// ─────────────────────────────────────────────────────────────────────────────\n\nexport interface Env {\n  WEBHOOK_SECRET: string\n  // QSTASH_TOKEN: string\n  // QSTASH_CURRENT_SIGNING_KEY: string\n  // QSTASH_NEXT_SIGNING_KEY: string\n  // SLACK_WEBHOOK_URL: string\n  // DISCORD_WEBHOOK_URL: string\n  [key: string]: unknown\n}\n\nexport default {\n  async fetch(request: Request, env: Env): Promise<Response> {\n    const url = new URL(request.url)\n\n    if (url.pathname === '/') {\n      return Response.json({ status: 'ok', framework: 'cloudflare-workers' })\n    }\n\n    if (url.pathname === '/webhooks/${p}' && request.method === 'POST') {\n      const handler = createWebhookHandler({\n        platform: '${p}',\n        secret: env.WEBHOOK_SECRET,\n        handler: async (payload) => {\n          console.log('✅ ${p} webhook verified. Event:', payload?.type)\n          return { received: true }\n        },\n      })\n\n      return handler(request, env)\n    }\n\n    return Response.json({ error: 'Not found' }, { status: 404 })\n  },\n}\n`
+}
+
+function genericTemplate(p: string, env: string): string {
+  return `import { WebhookVerificationService } from '@hookflo/tern'\n\nexport async function handleWebhook(request: Request) {\n  const result = await WebhookVerificationService.verify(request, {\n    platform: '${p}',\n    secret: process.env.${env}!,\n  })\n\n  if (!result.isValid) {\n    return new Response(JSON.stringify({ error: result.error }), { status: 400 })\n  }\n\n  console.log('received event:', result.payload)\n  return new Response(JSON.stringify({ received: true }), { status: 200 })\n}\n`
 }

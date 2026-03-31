@@ -14,10 +14,17 @@
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "typecheck": "tsc --noEmit -p tsconfig.json"
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node --test"
   },
   "dependencies": {
-    "@clack/prompts": "latest",
-    "@hookflo/tern-dev": "latest"
+    "@hookflo/tern-dev": "latest",
+    "ink": "^5.2.1",
+    "react": "^18.3.1",
+    "minimist": "^1.2.8"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/minimist": "^1.2.5"
   }
 }
