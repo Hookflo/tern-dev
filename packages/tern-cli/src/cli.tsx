@@ -1,35 +1,80 @@
 #!/usr/bin/env node
-import React from 'react'
-import { render } from 'ink'
-import { run } from './commands/scaffold.js'
-import { Banner } from './ui/Banner.js'
-import { Done } from './ui/Done.js'
-import { EnvBlock } from './ui/EnvBlock.js'
+import React, { useState } from 'react'
+import { render, Box, useApp } from 'ink'
+import { Logo } from './ui/Logo.js'
+import { SelectPrompt } from './ui/SelectPrompt.js'
+import { Loading } from './ui/Spinner.js'
+import { Complete } from './ui/Complete.js'
+import { scaffold } from './scaffold.js'
 
-const banner = render(<Banner />)
+type Step = 'platform' | 'framework' | 'loading' | 'done'
 
-run()
-  .then(({ framework, routePath, port, envVar }) => {
-    banner.unmount()
-    render(
-      <>
-        <EnvBlock
-          vars={[
-            { key: envVar, description: 'platform webhook signing secret', required: true },
-            { key: 'QSTASH_TOKEN', description: 'Upstash QStash token for queue retries', required: false },
-            { key: 'QSTASH_CURRENT_SIGNING_KEY', description: 'QStash current signing key', required: false },
-            { key: 'QSTASH_NEXT_SIGNING_KEY', description: 'QStash next signing key', required: false },
-            { key: 'SLACK_WEBHOOK_URL', description: 'Slack alerting endpoint', required: false },
-            { key: 'DISCORD_WEBHOOK_URL', description: 'Discord alerting endpoint', required: false },
-            { key: 'PORT', description: 'local server port', required: false },
-          ]}
+const PLATFORMS = [
+  { label: 'Stripe', value: 'stripe' },
+  { label: 'GitHub', value: 'github' },
+  { label: 'Clerk', value: 'clerk' },
+  { label: 'Dodo Payments', value: 'dodopayments' },
+  { label: 'Shopify', value: 'shopify' },
+  { label: 'Polar', value: 'polar' },
+  { label: 'Other', value: 'other' },
+]
+
+const FRAMEWORKS = [
+  { label: 'Hono', value: 'hono' },
+  { label: 'Next.js', value: 'nextjs' },
+  { label: 'Cloudflare Workers', value: 'cloudflare' },
+  { label: 'Express', value: 'express' },
+]
+
+interface Result {
+  filePath: string
+  envKeys: string[]
+}
+
+const App = () => {
+  const { exit } = useApp()
+  const [step, setStep] = useState<Step>('platform')
+  const [platform, setPlatform] = useState('')
+  const [framework, setFramework] = useState('')
+  const [result, setResult] = useState<Result | null>(null)
+
+  const handlePlatform = ({ value }: { value: string }) => {
+    setPlatform(value)
+    setStep('framework')
+  }
+
+  const handleFramework = async ({ value }: { value: string }) => {
+    setFramework(value)
+    setStep('loading')
+    const res = await scaffold({ platform, framework: value })
+    setResult(res)
+    setStep('done')
+    setTimeout(() => exit(), 100)
+  }
+
+  return (
+    <Box flexDirection="column" paddingX={1}>
+      <Logo />
+      {step === 'platform' && (
+        <SelectPrompt
+          question="Which platform are you integrating?"
+          items={PLATFORMS}
+          onSelect={handlePlatform}
         />
-        <Done framework={framework} routePath={routePath} port={port} />
-      </>,
-    )
-  })
-  .catch((err: unknown) => {
-    banner.unmount()
-    process.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`)
-    process.exit(1)
-  })
+      )}
+      {step === 'framework' && (
+        <SelectPrompt
+          question="Which framework?"
+          items={FRAMEWORKS}
+          onSelect={handleFramework}
+        />
+      )}
+      {step === 'loading' && <Loading label="Setting up your webhook handler..." />}
+      {step === 'done' && result && (
+        <Complete filePath={result.filePath} envKeys={result.envKeys} framework={framework} />
+      )}
+    </Box>
+  )
+}
+
+render(<App />)
